@@ -1,0 +1,255 @@
+---
+title: "DSE 511 Final Project: Data Cleaning"
+author: "Cecilia Albert-Black"
+date: "2025-11-04"
+output: html_document
+---
+
+Load necessary libraries
+
+```{r}
+library(readr)
+library(dplyr)
+library(stringr)
+```
+
+## Cleaning the NORS Outbreak Dataset
+
+Set working directory to repo, then import raw dataset
+
+```{r}
+# Import
+outbreak_df <- read_csv("NORS_outbreaks.csv", show_col_types = FALSE)
+
+# Preview
+head(outbreak_df)
+```
+
+### Understanding/Inspecting the Dataset
+
+Identify columns and their structure
+
+```{r}
+# Structure
+str(outbreak_df)
+```
+
+Summary statistics by column using skimr package
+
+```{r}
+library(skimr)
+skim(outbreak_df)
+```
+
+Determine unique values of categorical variables
+
+1.  States
+
+```{r}
+unique(outbreak_df$State)
+```
+
+2.  Primary Mode
+
+```{r}
+# Table of unique primary modes
+table(outbreak_df$`Primary Mode`)
+```
+
+3.  Etiology
+
+```{r}
+# Number of unique etiologies
+n_distinct(outbreak_df$Etiology)
+```
+
+Many different etiologies, many with similar words. I will use dplyr to detect keywords and assign them to broader categories within a new column called Etiology_grouped to decrease the number of unique etiologies (may be helpful to data analysis later on):
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(Etiology_grouped = case_when(
+    str_detect(Etiology, regex("norovirus", ignore_case = TRUE)) ~ "Norovirus",
+    str_detect(Etiology, regex("salmonella", ignore_case = TRUE)) ~ "Salmonella",
+    str_detect(Etiology, regex("campylobacter", ignore_case = TRUE)) ~ "Campylobacter",
+    str_detect(Etiology, regex("clostridium", ignore_case = TRUE)) ~ "Clostridium",
+    str_detect(Etiology, regex("staphylococcus", ignore_case = TRUE)) ~ "Staphylococcus",
+    str_detect(Etiology, regex("hepatitis", ignore_case = TRUE)) ~ "Hepatitis",
+    str_detect(Etiology, regex("unknown|unspecified|not determined", ignore_case = TRUE)) ~ "Unknown",
+    TRUE ~ "Other"
+  ))
+
+# Check new grouping
+n_distinct(outbreak_df$Etiology_grouped)
+```
+
+Top etiology groups
+
+```{r}
+outbreak_df %>%
+  count(`Food Vehicle`, sort = TRUE)
+```
+
+3.  Serotype or Genotype
+
+```{r}
+# Number of unique variables
+n_distinct(outbreak_df$`Serotype or Genotype`)
+```
+
+We'll keep this variable as-is since it describes in more detail the etiology of the outbreak
+
+3.  Etiology Status
+
+```{r}
+# Number of unique variables
+n_unique(outbreak_df$`Etiology Status`)
+```
+
+```{r}
+# Unique names
+unique(outbreak_df$`Etiology Status`)
+```
+
+Very messy variable that is hard to interpret - maybe we'll omit it or find a source that describes it better.
+
+3.  Setting
+
+```{r}
+n_unique(outbreak_df$Setting)
+```
+
+Many different settings, some have similarities, might be worth exploring ways to group them.
+
+3.  Food Vehicle
+
+```{r}
+# Top 10 food vehicles by rank
+outbreak_df %>%
+  count(`Food Vehicle`, sort = TRUE) %>%
+  slice_head(n = 10)
+```
+
+Investigate where the missing values of food vehicle are coming from
+
+```{r}
+outbreak_df %>%
+  mutate(FoodVehicle_missing = if_else(is.na(`Food Vehicle`) | `Food Vehicle` == "", "Missing", "Present")) %>%
+  count(`Primary Mode`, FoodVehicle_missing) %>%
+  group_by(`Primary Mode`) %>%
+  mutate(percent = 100 * n / sum(n)) %>%
+  ungroup()
+
+```
+
+This table shows that about half of the reported food vehicles are missing within the category food within primary mode.
+
+3.  Food Contaminated Ingredient
+
+```{r}
+# Number of unique variables 
+n_unique(outbreak_df$`Food Contaminated Ingredient`)
+```
+
+This might be a redundant variable, consider omitting and just using food vehicle for sake of simplicity.
+
+3.  IFSAC Category
+
+IFSAC stands for the Interagency Food Safety Analytics Collaboration, which is a categorization scheme used to identify foods most often linked to specific illnesses caused by certain pathogens. Source: <https://www.cdc.gov/ifsac/php/projects/food-categorization-scheme.html#:~:text=At%20a%20glance,include%20ice%20and%20dietary%20supplements.>
+
+```{r}
+unique(outbreak_df$`IFSAC Category`)
+```
+
+This category is similar to the food vehicle category; because it's more standardized, it might be worth using instead of food category.
+
+3.  Water Exposure
+
+```{r}
+# Top 10 water exposure types by rank
+outbreak_df %>%
+  count(`Water Exposure`, sort = TRUE)
+```
+
+Investigate where the missing values are coming from
+
+```{r}
+outbreak_df %>%
+  mutate(Waterexposure_missing = if_else(is.na(`Water Exposure`) | `Water Exposure` == "", "Missing", "Present")) %>%
+  count(`Primary Mode`, Waterexposure_missing) %>%
+  group_by(`Primary Mode`) %>%
+  mutate(percent = 100 * n / sum(n)) %>%
+  ungroup()
+
+```
+
+All outbreaks within water as primary mode of exposure have a designated type of water exposure (in other words, no missing values of water exposure in water-borne outbreaks)
+
+3.  Water Type
+
+```{r}
+n_unique(outbreak_df$`Water Type`)
+```
+
+```{r}
+# Top 10 water types by rank
+outbreak_df %>%
+  count(`Water Type`, sort = TRUE)
+```
+
+Some water types have similar names, so I will create a grouped variable to lump some of them into similar categories
+
+```{r}
+library(dplyr)
+library(stringr)
+
+outbreak_df <- outbreak_df %>%
+  mutate(Water_type_group = case_when(
+    is.na(`Water Type`) ~ "Missing/NA",
+    str_detect(`Water Type`, regex("community|individual|private", ignore_case = TRUE)) ~ "Drinking/Community Water",
+    str_detect(`Water Type`, regex("pool|hot tub|spa|whirlpool|splash pad|fountain|water playground", ignore_case = TRUE)) ~ "Recreational Water",
+    str_detect(`Water Type`, regex("lake|reservoir|other", ignore_case = TRUE)) ~ "Natural/Other",
+    str_detect(`Water Type`, regex("unknown|unspecified|not determined", ignore_case = TRUE)) ~ "Unknown",
+    TRUE ~ "Other"
+  ))
+
+# Check the new grouping
+outbreak_df %>%
+  count(Water_type_group, sort = TRUE)
+
+```
+
+3.  Animal Type
+
+```{r}
+# Top 10 animal types by rank
+outbreak_df %>%
+  count(`Animal Type`, sort = TRUE)
+```
+
+Create a new category which summarizes the animal type exposures into groups
+
+```{r}
+library(dplyr)
+library(stringr)
+
+outbreak_df <- outbreak_df %>%
+  mutate(Animal_group = case_when(
+    is.na(`Animal Type`) ~ "Missing/NA",
+    str_detect(`Animal Type`, regex("poultry", ignore_case = TRUE)) ~ "Poultry",
+    str_detect(`Animal Type`, regex("cattle", ignore_case = TRUE)) ~ "Cattle",
+    str_detect(`Animal Type`, regex("cat|dog|ferret|guinea pig|hedgehog|mouse|rat|raccoon", ignore_case = TRUE)) ~ "House Pets",
+    str_detect(`Animal Type`, regex("horse|pony|goat|sheep|pig|alpaca|donkey|llama|yak", ignore_case = TRUE)) ~ "Other Ungulates",
+    str_detect(`Animal Type`, regex("lizard|turtle|snake|reptile", ignore_case = TRUE)) ~ "Reptiles",
+    str_detect(`Animal Type`, regex("bird, not including poultry", ignore_case = TRUE)) ~ "Other Birds",
+    str_detect(`Animal Type`, regex("fish", ignore_case = TRUE)) ~ "Fish",
+    str_detect(`Animal Type`, regex("frog|salamander", ignore_case = TRUE)) ~ "Amphibians",
+    str_detect(`Animal Type`, regex("other", ignore_case = TRUE)) ~ "Other/Unknown",
+    TRUE ~ "Other/Unknown"
+  ))
+
+# Check the counts for each group
+outbreak_df %>%
+  count(Animal_group, sort = TRUE)
+
+
+```
