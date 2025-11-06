@@ -5,27 +5,38 @@ date: "2025-11-04"
 output: html_document
 ---
 
+Set working directory to R code folder
+
+```{r}
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/R code")
+```
+
 Load necessary libraries
 
 ```{r}
 library(readr)
 library(dplyr)
 library(stringr)
+library(ggplot2)
+library(lubridate)
 ```
 
 ## Cleaning the NORS Outbreak Dataset
 
-Set working directory to repo, then import raw dataset
+Import raw dataset from Raw data folder
 
 ```{r}
 # Import
-outbreak_df <- read_csv("NORS_outbreaks.csv", show_col_types = FALSE)
+outbreak_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Raw data/NORS_outbreaks.csv")
+
+# Convert to dataframe for easy handling
+outbreak_df <- as.data.frame(outbreak_df)
 
 # Preview
 head(outbreak_df)
 ```
 
-### Understanding/Inspecting the Dataset
+### 1. Understanding/Inspecting the Dataset
 
 Identify columns and their structure
 
@@ -41,64 +52,57 @@ library(skimr)
 skim(outbreak_df)
 ```
 
+#### A. Categorical Variables (n = 12)
+
 Determine unique values of categorical variables
 
-1.  States
+##### I. States
+
+The state where the exposure occurred. For a single state of exposure, the state will be listed. For multiple states of exposure, "Multistate" will be listed.
 
 ```{r}
 unique(outbreak_df$State)
 ```
 
-2.  Primary Mode
+##### II. Primary Mode
+
+Primary mode of transmission.
 
 ```{r}
 # Table of unique primary modes
 table(outbreak_df$`Primary Mode`)
 ```
 
-3.  Etiology
+##### III. Etiology
+
+Genus and species of identified etiology. Multiple reported etiologies are separated by a semicolon.
 
 ```{r}
 # Number of unique etiologies
-n_distinct(outbreak_df$Etiology)
+n_distinct(outbreak_df$Etiology) 
 ```
 
-Many different etiologies, many with similar words. I will use dplyr to detect keywords and assign them to broader categories within a new column called Etiology_grouped to decrease the number of unique etiologies (may be helpful to data analysis later on):
-
 ```{r}
-outbreak_df <- outbreak_df %>%
-  mutate(Etiology_grouped = case_when(
-    str_detect(Etiology, regex("norovirus", ignore_case = TRUE)) ~ "Norovirus",
-    str_detect(Etiology, regex("salmonella", ignore_case = TRUE)) ~ "Salmonella",
-    str_detect(Etiology, regex("campylobacter", ignore_case = TRUE)) ~ "Campylobacter",
-    str_detect(Etiology, regex("clostridium", ignore_case = TRUE)) ~ "Clostridium",
-    str_detect(Etiology, regex("staphylococcus", ignore_case = TRUE)) ~ "Staphylococcus",
-    str_detect(Etiology, regex("hepatitis", ignore_case = TRUE)) ~ "Hepatitis",
-    str_detect(Etiology, regex("unknown|unspecified|not determined", ignore_case = TRUE)) ~ "Unknown",
-    TRUE ~ "Other"
-  ))
-
-# Check new grouping
-n_distinct(outbreak_df$Etiology_grouped)
-```
-
-Top etiology groups
-
-```{r}
+# Top 10 Etiologies
 outbreak_df %>%
-  count(`Food Vehicle`, sort = TRUE)
+  count(Etiology, sort = TRUE)%>%
+  head(20)
 ```
 
-3.  Serotype or Genotype
+##### IV. Serotype or Genotype
+
+Serotype or genotype of identified etiology. Multiple reported etiologies are separated by a semicolon.
 
 ```{r}
 # Number of unique variables
 n_distinct(outbreak_df$`Serotype or Genotype`)
 ```
 
-We'll keep this variable as-is since it describes in more detail the etiology of the outbreak
+Might be a difficult variable to handle since many are a list of descriptors; will be hard to categorize.
 
-3.  Etiology Status
+##### V. Etiology Status
+
+Indicates whether or not the identified etiology is laboratory 'Confirmed' or 'Suspected'. Multiple reported etiologies are separated by a semicolon.
 
 ```{r}
 # Number of unique variables
@@ -106,34 +110,41 @@ n_unique(outbreak_df$`Etiology Status`)
 ```
 
 ```{r}
-# Unique names
-unique(outbreak_df$`Etiology Status`)
+# Top 10 unique names
+unique(outbreak_df$`Etiology Status`)%>%
+  head(10)   # top 10
 ```
 
 Very messy variable that is hard to interpret - maybe we'll omit it or find a source that describes it better.
 
-3.  Setting
+##### VI. Setting
+
+Setting(s) where exposure occurred. For foodborne outbreaks, the setting used is the location where the food was prepared.
 
 ```{r}
 n_unique(outbreak_df$Setting)
 ```
 
-Many different settings, some have similarities, might be worth exploring ways to group them.
+Many different settings, some have similarities, might be worth exploring ways to group them using cluster analysis.
 
-3.  Food Vehicle
+##### VII. Food Vehicle
+
+For foodborne outbreaks only, the implicated food. Multiple implicated foods are separated by a semicolon.
 
 ```{r}
 # Top 10 food vehicles by rank
 outbreak_df %>%
   count(`Food Vehicle`, sort = TRUE) %>%
-  slice_head(n = 10)
+  head(10)  
 ```
 
 Investigate where the missing values of food vehicle are coming from
 
 ```{r}
 outbreak_df %>%
-  mutate(FoodVehicle_missing = if_else(is.na(`Food Vehicle`) | `Food Vehicle` == "", "Missing", "Present")) %>%
+  mutate(
+    FoodVehicle_missing = if_else(
+      is.na(`Food Vehicle`) | `Food Vehicle` == "", "Missing", "Present")) %>%
   count(`Primary Mode`, FoodVehicle_missing) %>%
   group_by(`Primary Mode`) %>%
   mutate(percent = 100 * n / sum(n)) %>%
@@ -143,7 +154,9 @@ outbreak_df %>%
 
 This table shows that about half of the reported food vehicles are missing within the category food within primary mode.
 
-3.  Food Contaminated Ingredient
+##### VIII. Food Contaminated Ingredient
+
+For foodborne outbreaks only, indicates the contaminated ingredient. Multiple contaminated ingredients are separated by a semicolon.
 
 ```{r}
 # Number of unique variables 
@@ -152,17 +165,33 @@ n_unique(outbreak_df$`Food Contaminated Ingredient`)
 
 This might be a redundant variable, consider omitting and just using food vehicle for sake of simplicity.
 
-3.  IFSAC Category
+##### IX. IFSAC Category
 
-IFSAC stands for the Interagency Food Safety Analytics Collaboration, which is a categorization scheme used to identify foods most often linked to specific illnesses caused by certain pathogens. Source: <https://www.cdc.gov/ifsac/php/projects/food-categorization-scheme.html#:~:text=At%20a%20glance,include%20ice%20and%20dietary%20supplements.>
+For foodborne outbreaks only, the IFSAC food category of the contaminated ingredient. If contaminated ingredients fall into multiple IFSAC categories, "Multiple" will be listed.
 
 ```{r}
 unique(outbreak_df$`IFSAC Category`)
 ```
 
-This category is similar to the food vehicle category; because it's more standardized, it might be worth using instead of food category.
+Confirm that this category only exists within Food Vehicle outbreaks and count how many missing values
 
-3.  Water Exposure
+```{r}
+outbreak_df %>%
+  group_by(`Primary Mode`) %>%
+  summarize(
+    total = n(),
+    missing_IFSAC = sum(is.na(`IFSAC Category`)),
+    percent_missing = 100 * missing_IFSAC / total
+  ) %>%
+  arrange(desc(percent_missing))
+
+```
+
+Looks good, about half of food borne outbreaks contain IFSAC Categories. Might not be much more informative than Food Vehicle for the sake of our study.
+
+##### X. Water Exposure
+
+For waterborne outbreaks only, the implicated type of water exposure.
 
 ```{r}
 # Top 10 water exposure types by rank
@@ -174,7 +203,9 @@ Investigate where the missing values are coming from
 
 ```{r}
 outbreak_df %>%
-  mutate(Waterexposure_missing = if_else(is.na(`Water Exposure`) | `Water Exposure` == "", "Missing", "Present")) %>%
+  mutate(
+    Waterexposure_missing = if_else(
+      is.na(`Water Exposure`) | `Water Exposure` == "", "Missing", "Present")) %>%
   count(`Primary Mode`, Waterexposure_missing) %>%
   group_by(`Primary Mode`) %>%
   mutate(percent = 100 * n / sum(n)) %>%
@@ -184,57 +215,344 @@ outbreak_df %>%
 
 All outbreaks within water as primary mode of exposure have a designated type of water exposure (in other words, no missing values of water exposure in water-borne outbreaks)
 
-3.  Water Type
+##### XI. Water Type
+
+For waterborne outbreaks only, a description of the venue (for treated and untreated recreational water), water system (for drinking water) or device/structure (for other/unknown; e.g., steam cleaner, cooling tower, ornamental fountain, etc.) that was the vehicle for waterborne exposure to microbial pathogens, chemicals, or toxins.
 
 ```{r}
-n_unique(outbreak_df$`Water Type`)
+n_unique(outbreak_df$`Water Type`) 
 ```
 
 ```{r}
 # Top 10 water types by rank
 outbreak_df %>%
-  count(`Water Type`, sort = TRUE)
+  count(`Water Type`, sort = TRUE)%>%
+  head(10)
 ```
 
-Some water types have similar names, so I will create a grouped variable to lump some of them into similar categories
+##### XII. Animal Type
 
-```{r}
-library(dplyr)
-library(stringr)
-
-outbreak_df <- outbreak_df %>%
-  mutate(Water_type_group = case_when(
-    is.na(`Water Type`) ~ "Missing/NA",
-    str_detect(`Water Type`, regex("community|individual|private", ignore_case = TRUE)) ~ "Drinking/Community Water",
-    str_detect(`Water Type`, regex("pool|hot tub|spa|whirlpool|splash pad|fountain|water playground", ignore_case = TRUE)) ~ "Recreational Water",
-    str_detect(`Water Type`, regex("lake|reservoir|other", ignore_case = TRUE)) ~ "Natural/Other",
-    str_detect(`Water Type`, regex("unknown|unspecified|not determined", ignore_case = TRUE)) ~ "Unknown",
-    TRUE ~ "Other"
-  ))
-
-# Check the new grouping
-outbreak_df %>%
-  count(Water_type_group, sort = TRUE)
-
-```
-
-3.  Animal Type
+For animal contact outbreaks only, the type of animal involved. Multiple animal types are separated by a semicolon.
 
 ```{r}
 # Top 10 animal types by rank
 outbreak_df %>%
-  count(`Animal Type`, sort = TRUE)
+  count(`Animal Type`, sort = TRUE) %>%
+  head(10)
 ```
 
-Create a new category which summarizes the animal type exposures into groups
+#### B. Numeric Variables (n = 7)
+
+##### I. Year
+
+Year of earliest date of reported illness onset.
 
 ```{r}
-library(dplyr)
-library(stringr)
+# Check if any years are missing
+sum(is.na(outbreak_df$Year))
+```
 
+```{r}
+# Count of outbreaks per year
+
+
+# Visualize number of outbreaks per year
+barplot(table(outbreak_df$Year),
+        main = "Number of Outbreaks per Year",
+        xlab = "Year",
+        ylab = "Count of Outbreaks",
+        col = "steelblue",
+        border = NA)
+```
+
+Prior to 1998, outbreaks reported were \<1,000 maybe due to lack of proper reporting. Consider using data from 1998-present.
+
+##### II. Month
+
+Month of earliest date of reported illness onset.
+
+```{r}
+# Check if any months are missing within each year
+
+missing_months_by_year <- outbreak_df %>%
+  filter(!is.na(Year)) %>%
+  group_by(Year) %>%
+  summarize(
+    observed_months = sort(unique(Month)),
+    missing_months = list(setdiff(1:12, unique(Month))),
+    n_missing = length(setdiff(1:12, unique(Month)))
+  ) %>%
+  filter(n_missing > 0)
+
+missing_months_by_year
+
+```
+
+```{r}
+# Visualize this using a heatmap
+
+ggplot(outbreak_df, aes(x = Month, y = factor(Year))) +
+  geom_tile(aes(fill = !is.na(Month)), color = "white") +
+  scale_fill_manual(values = c("FALSE" = "grey90", "TRUE" = "steelblue")) +
+  labs(title = "Month Coverage by Year",
+       x = "Month",
+       y = "Year",
+       fill = "Data Present") +
+  theme_minimal()
+
+```
+
+Prior to 1998, some months had no reported outbreaks. This could be true or also indicative of a weak reporting system.
+
+```{r}
+# Frequency of outbreaks by month across all years
+
+month_freq <- outbreak_df %>%
+  filter(!is.na(Month)) %>%
+  count(Month, sort = TRUE)
+
+month_freq
+```
+
+```{r}
+# Visualization of frequency of outbreaks by month across all years
+ggplot(outbreak_df, aes(x = factor(Month))) +
+  geom_bar(fill = "steelblue") +
+  labs(title = "Frequency of Outbreaks per Month (All Years)",
+       x = "Month",
+       y = "Number of Outbreaks") +
+  theme_minimal()
+```
+
+This shows the seasonal pattern in outbreak data; month may be a significant predictor of outbreak cases.
+
+##### III. Illness
+
+Estimated total number of primary cases, including lab-confirmed and probable, based on the outbreak-specific definition.
+
+```{r}
+# Histogram of Illnesses by outbreak
+hist(outbreak_df$Illnesses)
+```
+
+Most outbreaks result in \<50 cases of illnesses.
+
+```{r}
+# Check for missing values
+sum(is.na(outbreak_df$Illnesses))
+```
+
+Some outbreaks are associated with NA illnesses, why could this be?
+
+```{r}
+# Check if a certain primary mode have several missing values of Illness
+missing_by_primary_mode <- outbreak_df %>%
+  group_by(`Primary Mode`) %>%
+  summarize(
+    total = n(),
+    missing_illness = sum(is.na(Illnesses)),
+    percent_missing = 100 * missing_illness / total,
+    .groups = "drop"
+  )
+
+# Visualize
+ggplot(missing_by_primary_mode, aes(x = `Primary Mode`, y = percent_missing)) +
+  geom_col(fill = "green") +
+  labs(title = "Percentage of Missing Illnesses by Primary Mode",
+       x = "Primary Mode",
+       y = "Percent Missing (%)") +
+  theme_minimal()
+```
+
+Most cases of outbreaks resulting in no illnesses were from water as the primary mode of exposure.
+
+##### IV. Hospitalizations
+
+Number of primary cases who were hospitalized.
+
+```{r}
+hist(outbreak_df$Hospitalizations)
+```
+
+```{r}
+# Check for missing values
+sum(is.na(outbreak_df$Hospitalizations))
+```
+
+```{r}
+range(outbreak_df$Hospitalizations, na.rm = TRUE)
+```
+
+Most outbreaks result in \<25 hospitalizations; however, some rare outbreaks have resulted in as many as 300.
+
+##### V. Info on Hospitalizations
+
+Total number of primary cases for whom information on hospitalization is available.
+
+```{r}
+unique(outbreak_df$`Info On Hospitalizations`)
+```
+
+This variable is hard to interpret and provides no additional information from the Hospitalizations variable.
+
+##### VI. Deaths
+
+Number of primary cases who died.
+
+```{r}
+hist(outbreak_df$Deaths)
+```
+
+```{r}
+# Check for missing values
+sum(is.na(outbreak_df$Deaths))
+```
+
+##### VII. Info on Deaths
+
+Total number of primary cases for whom information on hospitalization is available.
+
+```{r}
+hist(outbreak_df$`Info On Deaths`)
+```
+
+### 2. Handling Missing Data
+
+#### A. Removing Variables
+
+-   Serotype or Genotype: many observations are a list of several types, might be hard to use this data.
+
+-   Etiology Status: many observations are a list of several confirmed/suspected statuses by serotype or genotype, which would be hard to use.
+
+-   IFSAC Category: redundant to Primary Mode and Food Type.
+
+-   Food Contaminated Ingredient: redundant variable, Food Type is enough.
+
+-   Info on Hospitalizations: not actually indicative of hospitalizations.
+
+-   Info on Deaths: not actually indicative of deaths.
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  select(
+    -'Serotype or Genotype',
+    -'Etiology Status',
+    -'IFSAC Category',
+    -'Info On Hospitalizations',
+    -'Info On Deaths',
+    -'Food Contaminated Ingredient'
+  )
+
+# Check
+colnames(outbreak_df)
+```
+
+#### B. Impute NAs
+
+-   Food Vehicle: NA values for Food Vehicle falling under the Food as Primary Mode of outbreak will be replaced by "Unknown".
+
+-   Water Exposure: leave NAs because this variable does not apply to non-waterborne outbreaks.
+
+-   Water Type: leave NAs because this variable does not apply to non-waterborne outbreaks.
+
+-   Animal Type: leave NAs because this variable does not apply to non-animal associated outbreaks.
+
+-   Illnesses: replace NAs with 0 because we found that most NAs were associated with Water as the primary source of exposure, meaning water-born pathogens likely were detected before they resulted in any illnesses.
+
+-   Hospitalizations: replace NAs with 0, assuming no reported hospitalizations means none were reported with the outbreak.
+
+-   Deaths: replace NAs with 0, assuming no reported deaths means no deaths were associated with the outbreak.
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(
+    `Food Vehicle` = 
+      case_when(
+      is.na(`Food Vehicle`) & 
+        str_detect(`Primary Mode`, regex("Food", ignore_case = TRUE)) ~ "Unknown",
+      TRUE ~ `Food Vehicle`
+    ),
+
+    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
+    
+    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
+
+    Deaths = if_else(is.na(Deaths), 0, Deaths)
+  )
+```
+
+```{r}
+# Check that no NAs exist in Food Vehicle when Food as Primary Mode of outbreak
+outbreak_df %>%
+  filter(str_detect(`Primary Mode`, regex("food", ignore_case = TRUE))) %>%
+  summarize(
+    missing_food_vehicle = sum(is.na(`Food Vehicle`))
+  )
+
+# Check that Unknown was successfully added as a new category of Food Vehicle for the NA values 
+outbreak_df %>%
+  count(`Food Vehicle`, sort = TRUE) %>%
+  head(10)  
+```
+
+```{r}
+# Check that NAs in Illnesses and Deaths have been replaced by 0
+outbreak_df %>%
+  summarize(
+    missing_illnesses = sum(is.na(Illnesses)),
+    missing_deaths = sum(is.na(Deaths))
+  )
+```
+
+### 3. Standardize and Normalize Data
+
+#### A. Standardize categorical variables (e.g., state abbreviations, illness names).
+
+Create a date variable - to combine 2 time variables into 1
+
+```{r}
+# Create a Date variable which combines Month-Year
+outbreak_df <- outbreak_df %>%
+  mutate(
+    Date = sprintf("%04d-%02d", Year, Month)  # formats as "YYYY-MM"
+  )
+```
+
+Create a state abbreviation variable - for easier interpretation
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(
+    state_abbr = state.abb[ match(State, state.name) ]
+  )
+```
+
+#### B. Normalize numeric variables if you plan to use clustering or distance-based methods.
+
+Standardize count data (create new variables)
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(
+    Hospitalizations_std = scale(Hospitalizations),
+    Deaths_std = scale(Deaths)
+  )
+
+# Preview
+outbreak_df %>%
+  select(Hospitalizations_std, Deaths_std) %>%
+  head(10)
+```
+
+### 4. Feature Engineering
+
+#### I. Animal Group
+
+```{r}
 outbreak_df <- outbreak_df %>%
   mutate(Animal_group = case_when(
     is.na(`Animal Type`) ~ "Missing/NA",
+    str_detect(`Animal Type`, ";") ~ "Multiple",  # catches multi-animal entries
     str_detect(`Animal Type`, regex("poultry", ignore_case = TRUE)) ~ "Poultry",
     str_detect(`Animal Type`, regex("cattle", ignore_case = TRUE)) ~ "Cattle",
     str_detect(`Animal Type`, regex("cat|dog|ferret|guinea pig|hedgehog|mouse|rat|raccoon", ignore_case = TRUE)) ~ "House Pets",
@@ -250,6 +568,99 @@ outbreak_df <- outbreak_df %>%
 # Check the counts for each group
 outbreak_df %>%
   count(Animal_group, sort = TRUE)
+```
 
+#### II. Outbreak Severity
 
+Combine illnesses, hospitalizations, and deaths into a single severity measure. Since illnesses might still be an object (string), we first convert it to numeric if needed.
+
+Outbreak Severity=Illnesses+Hospitalizations+Deaths
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  # Ensure numeric and replace NAs with 0
+  mutate(
+    Illnesses = as.numeric(Illnesses),
+    Hospitalizations = as.numeric(Hospitalizations),
+    Deaths = as.numeric(Deaths),
+    
+    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
+    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
+    Deaths = if_else(is.na(Deaths), 0, Deaths),
+    
+    # Create outbreak_severity as sum
+    outbreak_severity = Illnesses + Hospitalizations + Deaths
+  )
+
+# Preview the first few rows
+outbreak_df %>%
+  select(Illnesses, Hospitalizations, Deaths, outbreak_severity) %>%
+  head(10)
+```
+
+#### III. Binary Features for Primary Mode
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(
+    is_food_related = if_else(str_detect(`Primary Mode`, regex("Food", ignore_case = TRUE)), 1, 0),
+    is_water_related = if_else(str_detect(`Primary Mode`, regex("Water", ignore_case = TRUE)), 1, 0),
+    is_animal_related = if_else(str_detect(`Primary Mode`, regex("Animal", ignore_case = TRUE)), 1, 0)
+  )
+
+# Preview the first few rows
+outbreak_df %>%
+  select(`Primary Mode`, is_food_related, is_water_related, is_animal_related) %>%
+  head(10)
+```
+
+#### IV. Outbreak Month/Season
+
+```{r}
+outbreak_df <- outbreak_df %>%
+  mutate(
+    season = case_when(
+      Month %in% c(12, 1, 2) ~ "Winter",
+      Month %in% c(3, 4, 5)  ~ "Spring",
+      Month %in% c(6, 7, 8)  ~ "Summer",
+      Month %in% c(9, 10, 11) ~ "Fall",
+      TRUE ~ NA_character_  # in case Month is missing or invalid
+    )
+  )
+
+# Preview the first few rows
+outbreak_df %>%
+  select(Month, season) %>%
+  head(10)
+```
+
+#### V. Reordering Columns
+
+For readability
+
+```{r}
+# Define the desired column order
+desired_order <- c(
+  "Date", "Year", "Month", "season", "State", "state_abbr",
+  "Primary Mode", "Etiology", "Serotype or Genotype", "IFSAC Category", "setting",
+  "Illnesses", "Hospitalizations", "Deaths", "outbreak_severity",
+  "food_vehicle_missing", "Water Exposure", "water_exposure_missing", "Water Type", "water_type_group",
+  "Animal Type", "animal_group",
+  "is_food_related", "is_water_related", "is_animal_related"
+)
+
+# Reorder columns, keeping only those that exist
+outbreak_df <- outbreak_df %>%
+  select(any_of(desired_order))
+
+# Preview first 10 rows
+outbreak_df %>%
+  head(10)
+```
+
+### 5. Save to CSV
+
+```{r}
+# Save to CSV
+write.csv(outbreak_df, "outbreak_clean_v3_r.csv", row.names = FALSE)
 ```
