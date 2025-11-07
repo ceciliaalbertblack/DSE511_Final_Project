@@ -29,9 +29,6 @@ Import raw dataset from Raw data folder
 # Import
 outbreak_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Raw data/NORS_outbreaks.csv")
 
-# Convert to dataframe for easy handling
-outbreak_df <- as.data.frame(outbreak_df)
-
 # Preview
 head(outbreak_df)
 ```
@@ -196,7 +193,8 @@ For waterborne outbreaks only, the implicated type of water exposure.
 ```{r}
 # Top 10 water exposure types by rank
 outbreak_df %>%
-  count(`Water Exposure`, sort = TRUE)
+  count(`Water Exposure`, sort = TRUE) %>%
+  head(10)
 ```
 
 Investigate where the missing values are coming from
@@ -342,30 +340,6 @@ Most outbreaks result in \<50 cases of illnesses.
 sum(is.na(outbreak_df$Illnesses))
 ```
 
-Some outbreaks are associated with NA illnesses, why could this be?
-
-```{r}
-# Check if a certain primary mode have several missing values of Illness
-missing_by_primary_mode <- outbreak_df %>%
-  group_by(`Primary Mode`) %>%
-  summarize(
-    total = n(),
-    missing_illness = sum(is.na(Illnesses)),
-    percent_missing = 100 * missing_illness / total,
-    .groups = "drop"
-  )
-
-# Visualize
-ggplot(missing_by_primary_mode, aes(x = `Primary Mode`, y = percent_missing)) +
-  geom_col(fill = "green") +
-  labs(title = "Percentage of Missing Illnesses by Primary Mode",
-       x = "Primary Mode",
-       y = "Percent Missing (%)") +
-  theme_minimal()
-```
-
-Most cases of outbreaks resulting in no illnesses were from water as the primary mode of exposure.
-
 ##### IV. Hospitalizations
 
 Number of primary cases who were hospitalized.
@@ -379,11 +353,7 @@ hist(outbreak_df$Hospitalizations)
 sum(is.na(outbreak_df$Hospitalizations))
 ```
 
-```{r}
-range(outbreak_df$Hospitalizations, na.rm = TRUE)
-```
-
-Most outbreaks result in \<25 hospitalizations; however, some rare outbreaks have resulted in as many as 300.
+Several missing hospitalizations
 
 ##### V. Info on Hospitalizations
 
@@ -424,8 +394,6 @@ hist(outbreak_df$`Info On Deaths`)
 
 -   Etiology Status: many observations are a list of several confirmed/suspected statuses by serotype or genotype, which would be hard to use.
 
--   IFSAC Category: redundant to Primary Mode and Food Type.
-
 -   Food Contaminated Ingredient: redundant variable, Food Type is enough.
 
 -   Info on Hospitalizations: not actually indicative of hospitalizations.
@@ -437,7 +405,6 @@ outbreak_df <- outbreak_df %>%
   select(
     -'Serotype or Genotype',
     -'Etiology Status',
-    -'IFSAC Category',
     -'Info On Hospitalizations',
     -'Info On Deaths',
     -'Food Contaminated Ingredient'
@@ -449,35 +416,32 @@ colnames(outbreak_df)
 
 #### B. Impute NAs
 
--   Food Vehicle: NA values for Food Vehicle falling under the Food as Primary Mode of outbreak will be replaced by "Unknown".
+-   Food Vehicle & IFSAC Category: NA values for Food Vehicle falling under the Food as Primary Mode of outbreak will be replaced by "Unknown".
 
--   Water Exposure: leave NAs because this variable does not apply to non-waterborne outbreaks.
-
--   Water Type: leave NAs because this variable does not apply to non-waterborne outbreaks.
+-   Water Exposure & Water Type: leave NAs because this variable does not apply to non-waterborne outbreaks.
 
 -   Animal Type: leave NAs because this variable does not apply to non-animal associated outbreaks.
 
--   Illnesses: replace NAs with 0 because we found that most NAs were associated with Water as the primary source of exposure, meaning water-born pathogens likely were detected before they resulted in any illnesses.
-
--   Hospitalizations: replace NAs with 0, assuming no reported hospitalizations means none were reported with the outbreak.
-
--   Deaths: replace NAs with 0, assuming no reported deaths means no deaths were associated with the outbreak.
+-   Deaths & Hospitalizations: replace NAs with median value, to retain the same distribution of the variable while being robust to outliers (e.g. replacing with 0 or mean values would skew the data).
 
 ```{r}
 outbreak_df <- outbreak_df %>%
   mutate(
-    `Food Vehicle` = 
-      case_when(
+    `Food Vehicle` = case_when(
       is.na(`Food Vehicle`) & 
         str_detect(`Primary Mode`, regex("Food", ignore_case = TRUE)) ~ "Unknown",
       TRUE ~ `Food Vehicle`
     ),
-
-    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
-    
-    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
-
-    Deaths = if_else(is.na(Deaths), 0, Deaths)
+    Hospitalizations = if_else(
+      is.na(Hospitalizations),
+      median(Hospitalizations, na.rm = TRUE),
+      Hospitalizations
+    ),
+    Deaths = if_else(
+      is.na(Deaths),
+      median(Deaths, na.rm = TRUE),
+      Deaths
+    )
   )
 ```
 
@@ -496,10 +460,10 @@ outbreak_df %>%
 ```
 
 ```{r}
-# Check that NAs in Illnesses and Deaths have been replaced by 0
+# Check that NAs don't exist in hospitalizations and deaths anymore
 outbreak_df %>%
   summarize(
-    missing_illnesses = sum(is.na(Illnesses)),
+    missing_hosp = sum(is.na(Hospitalizations)),
     missing_deaths = sum(is.na(Deaths))
   )
 ```
@@ -535,12 +499,13 @@ Standardize count data (create new variables)
 outbreak_df <- outbreak_df %>%
   mutate(
     Hospitalizations_std = scale(Hospitalizations),
-    Deaths_std = scale(Deaths)
+    Deaths_std = scale(Deaths),
+    Illnesses_std = scale(Illnesses)
   )
 
 # Preview
 outbreak_df %>%
-  select(Hospitalizations_std, Deaths_std) %>%
+  select(Hospitalizations_std, Deaths_std, Illnesses_std) %>%
   head(10)
 ```
 
@@ -570,32 +535,44 @@ outbreak_df %>%
   count(Animal_group, sort = TRUE)
 ```
 
-#### II. Outbreak Severity
+#### II. Severity of Outbreak
 
-Combine illnesses, hospitalizations, and deaths into a single severity measure. Since illnesses might still be an object (string), we first convert it to numeric if needed.
+Since these following variables are nested within each other illnesses(hospitalizations((deaths))), we'll create 3 new ratios to characterize outbreak severity.
 
-Outbreak Severity=Illnesses+Hospitalizations+Deaths
+```{r}
+# Compute ratios only when denominator is > 0
+outbreak_df <- outbreak_df %>%
+  mutate(
+    hosp_per_ill = if_else(Illnesses > 0, Hospitalizations / Illnesses, NA_real_),
+    death_per_hosp = if_else(Hospitalizations > 0, Deaths / Hospitalizations, NA_real_),
+    death_per_ill = if_else(Illnesses > 0, Deaths / Illnesses, NA_real_)
+  )
+
+# Mean ratios
+outbreak_df %>%
+  summarize(
+    mean_hosp_per_ill = mean(hosp_per_ill, na.rm = TRUE),
+    mean_death_per_hosp = mean(death_per_hosp, na.rm = TRUE),
+    mean_death_per_ill = mean(death_per_ill, na.rm = TRUE)
+  )
+```
+
+Check NAs of new ratio variables
+
+```{r}
+outbreak_df %>%
+  summarize(
+    na_hosp_per_ill = sum(is.na(hosp_per_ill)),
+    na_death_per_hosp = sum(is.na(death_per_hosp)),
+    na_death_per_ill = sum(is.na(death_per_ill))
+  )
+```
+
+We'll omit death/hospitalizations since it will be hard to handle NAs
 
 ```{r}
 outbreak_df <- outbreak_df %>%
-  # Ensure numeric and replace NAs with 0
-  mutate(
-    Illnesses = as.numeric(Illnesses),
-    Hospitalizations = as.numeric(Hospitalizations),
-    Deaths = as.numeric(Deaths),
-    
-    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
-    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
-    Deaths = if_else(is.na(Deaths), 0, Deaths),
-    
-    # Create outbreak_severity as sum
-    outbreak_severity = Illnesses + Hospitalizations + Deaths
-  )
-
-# Preview the first few rows
-outbreak_df %>%
-  select(Illnesses, Hospitalizations, Deaths, outbreak_severity) %>%
-  head(10)
+  select(-death_per_hosp)
 ```
 
 #### III. Binary Features for Primary Mode

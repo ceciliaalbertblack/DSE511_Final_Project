@@ -395,71 +395,70 @@ outbreak_df &lt;- read_csv(&quot;C:/Users/q4q/repos/DSE511_Final_Project/Raw dat
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code># Convert to dataframe for easy handling
-outbreak_df &lt;- as.data.frame(outbreak_df)
-
-# Preview
+<pre class="r"><code># Preview
 head(outbreak_df)</code></pre>
-<pre><code>##   Year Month      State Primary Mode    Etiology Serotype or Genotype
-## 1 1971     2 California        Water      Copper                 &lt;NA&gt;
-## 2 1971     6   Arkansas        Water Hepatitis A                 &lt;NA&gt;
-## 3 1971     6   Missouri        Water     Unknown                 &lt;NA&gt;
-## 4 1971     6    Alabama        Water    Selenium                 &lt;NA&gt;
-## 5 1971     6    Vermont        Water     Unknown                 &lt;NA&gt;
-## 6 1971     6     Oregon        Water     Unknown                 &lt;NA&gt;
-##   Etiology Status                  Setting Illnesses Hospitalizations
-## 1       Confirmed               Restaurant         2               NA
-## 2       Confirmed                    Store        98               NA
-## 3       Suspected Subdivision/Neighborhood         2               NA
-## 4       Confirmed                  Unknown         3               NA
-## 5       Suspected   Community/municipality         3               NA
-## 6       Suspected               Restaurant       200               NA
-##   Info On Hospitalizations Deaths Info On Deaths Food Vehicle
-## 1                       NA      0             NA         &lt;NA&gt;
-## 2                       NA      0             NA         &lt;NA&gt;
-## 3                       NA      0             NA         &lt;NA&gt;
-## 4                       NA      0             NA         &lt;NA&gt;
-## 5                       NA      0             NA         &lt;NA&gt;
-## 6                       NA      0             NA         &lt;NA&gt;
-##   Food Contaminated Ingredient IFSAC Category Water Exposure         Water Type
-## 1                         &lt;NA&gt;           &lt;NA&gt; Drinking water          Community
-## 2                         &lt;NA&gt;           &lt;NA&gt; Drinking water              Other
-## 3                         &lt;NA&gt;           &lt;NA&gt; Drinking water          Community
-## 4                         &lt;NA&gt;           &lt;NA&gt; Drinking water Individual/Private
-## 5                         &lt;NA&gt;           &lt;NA&gt; Drinking water          Community
-## 6                         &lt;NA&gt;           &lt;NA&gt; Drinking water              Other
-##   Animal Type
-## 1        &lt;NA&gt;
-## 2        &lt;NA&gt;
-## 3        &lt;NA&gt;
-## 4        &lt;NA&gt;
-## 5        &lt;NA&gt;
-## 6        &lt;NA&gt;</code></pre>
+<pre><code>## # A tibble: 6 × 19
+##    Year Month State      `Primary Mode` Etiology    `Serotype or Genotype`
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;      &lt;chr&gt;          &lt;chr&gt;       &lt;chr&gt;                 
+## 1  1971     2 California Water          Copper      &lt;NA&gt;                  
+## 2  1971     6 Arkansas   Water          Hepatitis A &lt;NA&gt;                  
+## 3  1971     6 Missouri   Water          Unknown     &lt;NA&gt;                  
+## 4  1971     6 Alabama    Water          Selenium    &lt;NA&gt;                  
+## 5  1971     6 Vermont    Water          Unknown     &lt;NA&gt;                  
+## 6  1971     6 Oregon     Water          Unknown     &lt;NA&gt;                  
+## # ℹ 13 more variables: `Etiology Status` &lt;chr&gt;, Setting &lt;chr&gt;, Illnesses &lt;dbl&gt;,
+## #   Hospitalizations &lt;dbl&gt;, `Info On Hospitalizations` &lt;dbl&gt;, Deaths &lt;dbl&gt;,
+## #   `Info On Deaths` &lt;dbl&gt;, `Food Vehicle` &lt;chr&gt;,
+## #   `Food Contaminated Ingredient` &lt;chr&gt;, `IFSAC Category` &lt;chr&gt;,
+## #   `Water Exposure` &lt;chr&gt;, `Water Type` &lt;chr&gt;, `Animal Type` &lt;chr&gt;</code></pre>
 <div id="understandinginspecting-the-dataset" class="section level3">
 <h3>1. Understanding/Inspecting the Dataset</h3>
 <p>Identify columns and their structure</p>
 <pre class="r"><code># Structure
 str(outbreak_df)</code></pre>
-<pre><code>## &#39;data.frame&#39;:    66713 obs. of  19 variables:
-##  $ Year                        : num  1971 1971 1971 1971 1971 ...
-##  $ Month                       : num  2 6 6 6 6 6 7 7 7 7 ...
-##  $ State                       : chr  &quot;California&quot; &quot;Arkansas&quot; &quot;Missouri&quot; &quot;Alabama&quot; ...
-##  $ Primary Mode                : chr  &quot;Water&quot; &quot;Water&quot; &quot;Water&quot; &quot;Water&quot; ...
-##  $ Etiology                    : chr  &quot;Copper&quot; &quot;Hepatitis A&quot; &quot;Unknown&quot; &quot;Selenium&quot; ...
-##  $ Serotype or Genotype        : chr  NA NA NA NA ...
-##  $ Etiology Status             : chr  &quot;Confirmed&quot; &quot;Confirmed&quot; &quot;Suspected&quot; &quot;Confirmed&quot; ...
-##  $ Setting                     : chr  &quot;Restaurant&quot; &quot;Store&quot; &quot;Subdivision/Neighborhood&quot; &quot;Unknown&quot; ...
-##  $ Illnesses                   : num  2 98 2 3 3 200 22 187 68 NA ...
-##  $ Hospitalizations            : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ Info On Hospitalizations    : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ Deaths                      : num  0 0 0 0 0 0 0 0 0 0 ...
-##  $ Info On Deaths              : num  NA NA NA NA NA NA NA NA NA NA ...
-##  $ Food Vehicle                : chr  NA NA NA NA ...
-##  $ Food Contaminated Ingredient: chr  NA NA NA NA ...
-##  $ IFSAC Category              : chr  NA NA NA NA ...
-##  $ Water Exposure              : chr  &quot;Drinking water&quot; &quot;Drinking water&quot; &quot;Drinking water&quot; &quot;Drinking water&quot; ...
-##  $ Water Type                  : chr  &quot;Community&quot; &quot;Other&quot; &quot;Community&quot; &quot;Individual/Private&quot; ...
-##  $ Animal Type                 : chr  NA NA NA NA ...</code></pre>
+<pre><code>## spc_tbl_ [66,713 × 19] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
+##  $ Year                        : num [1:66713] 1971 1971 1971 1971 1971 ...
+##  $ Month                       : num [1:66713] 2 6 6 6 6 6 7 7 7 7 ...
+##  $ State                       : chr [1:66713] &quot;California&quot; &quot;Arkansas&quot; &quot;Missouri&quot; &quot;Alabama&quot; ...
+##  $ Primary Mode                : chr [1:66713] &quot;Water&quot; &quot;Water&quot; &quot;Water&quot; &quot;Water&quot; ...
+##  $ Etiology                    : chr [1:66713] &quot;Copper&quot; &quot;Hepatitis A&quot; &quot;Unknown&quot; &quot;Selenium&quot; ...
+##  $ Serotype or Genotype        : chr [1:66713] NA NA NA NA ...
+##  $ Etiology Status             : chr [1:66713] &quot;Confirmed&quot; &quot;Confirmed&quot; &quot;Suspected&quot; &quot;Confirmed&quot; ...
+##  $ Setting                     : chr [1:66713] &quot;Restaurant&quot; &quot;Store&quot; &quot;Subdivision/Neighborhood&quot; &quot;Unknown&quot; ...
+##  $ Illnesses                   : num [1:66713] 2 98 2 3 3 200 22 187 68 3500 ...
+##  $ Hospitalizations            : num [1:66713] NA NA NA NA NA NA NA NA NA NA ...
+##  $ Info On Hospitalizations    : num [1:66713] NA NA NA NA NA NA NA NA NA NA ...
+##  $ Deaths                      : num [1:66713] 0 0 0 0 0 0 0 0 0 0 ...
+##  $ Info On Deaths              : num [1:66713] NA NA NA NA NA NA NA NA NA NA ...
+##  $ Food Vehicle                : chr [1:66713] NA NA NA NA ...
+##  $ Food Contaminated Ingredient: chr [1:66713] NA NA NA NA ...
+##  $ IFSAC Category              : chr [1:66713] NA NA NA NA ...
+##  $ Water Exposure              : chr [1:66713] &quot;Drinking water&quot; &quot;Drinking water&quot; &quot;Drinking water&quot; &quot;Drinking water&quot; ...
+##  $ Water Type                  : chr [1:66713] &quot;Community&quot; &quot;Other&quot; &quot;Community&quot; &quot;Individual/Private&quot; ...
+##  $ Animal Type                 : chr [1:66713] NA NA NA NA ...
+##  - attr(*, &quot;spec&quot;)=
+##   .. cols(
+##   ..   Year = col_double(),
+##   ..   Month = col_double(),
+##   ..   State = col_character(),
+##   ..   `Primary Mode` = col_character(),
+##   ..   Etiology = col_character(),
+##   ..   `Serotype or Genotype` = col_character(),
+##   ..   `Etiology Status` = col_character(),
+##   ..   Setting = col_character(),
+##   ..   Illnesses = col_double(),
+##   ..   Hospitalizations = col_double(),
+##   ..   `Info On Hospitalizations` = col_double(),
+##   ..   Deaths = col_double(),
+##   ..   `Info On Deaths` = col_double(),
+##   ..   `Food Vehicle` = col_character(),
+##   ..   `Food Contaminated Ingredient` = col_character(),
+##   ..   `IFSAC Category` = col_character(),
+##   ..   `Water Exposure` = col_character(),
+##   ..   `Water Type` = col_character(),
+##   ..   `Animal Type` = col_character()
+##   .. )
+##  - attr(*, &quot;problems&quot;)=&lt;externalptr&gt;</code></pre>
 <p>Summary statistics by column using skimr package</p>
 <pre class="r"><code>library(skimr)</code></pre>
 <pre><code>## Warning: package &#39;skimr&#39; was built under R version 4.5.2</code></pre>
@@ -653,18 +652,18 @@ str(outbreak_df)</code></pre>
 </tbody>
 </table>
 <p><strong>Variable type: numeric</strong></p>
-<table>
+<table style="width:100%;">
 <colgroup>
-<col width="26%" />
+<col width="25%" />
 <col width="10%" />
 <col width="14%" />
 <col width="8%" />
-<col width="6%" />
+<col width="8%" />
 <col width="5%" />
 <col width="5%" />
 <col width="5%" />
 <col width="5%" />
-<col width="5%" />
+<col width="7%" />
 <col width="6%" />
 </colgroup>
 <thead>
@@ -711,15 +710,15 @@ str(outbreak_df)</code></pre>
 </tr>
 <tr class="odd">
 <td align="left">Illnesses</td>
-<td align="right">54</td>
+<td align="right">0</td>
 <td align="right">1.00</td>
-<td align="right">25.00</td>
-<td align="right">42.23</td>
+<td align="right">33.25</td>
+<td align="right">1564.41</td>
 <td align="right">2</td>
 <td align="right">5</td>
-<td align="right">13</td>
+<td align="right">14</td>
 <td align="right">30</td>
-<td align="right">990</td>
+<td align="right">403000</td>
 <td align="left">▇▁▁▁▁</td>
 </tr>
 <tr class="even">
@@ -845,27 +844,29 @@ n_distinct(outbreak_df$Etiology) </code></pre>
 outbreak_df %&gt;%
   count(Etiology, sort = TRUE)%&gt;%
   head(20)</code></pre>
-<pre><code>##                                         Etiology     n
-## 1                                           &lt;NA&gt; 16338
-## 2                                      Norovirus  9668
-## 3                         Norovirus Genogroup II  9178
-## 4                              Norovirus unknown  8769
-## 5                            Salmonella enterica  4124
-## 6                          Norovirus Genogroup I  4108
-## 7        Escherichia coli, Shiga toxin-producing  1219
-## 8                                Shigella sonnei  1172
-## 9                        Clostridium perfringens   926
-## 10                        Legionella pneumophila   763
-## 11                         Staphylococcus aureus   626
-## 12                          Campylobacter jejuni   604
-## 13                               Scombroid toxin   497
+<pre><code>## # A tibble: 20 × 2
+##    Etiology                                          n
+##    &lt;chr&gt;                                         &lt;int&gt;
+##  1 &lt;NA&gt;                                          16338
+##  2 Norovirus                                      9668
+##  3 Norovirus Genogroup II                         9178
+##  4 Norovirus unknown                              8769
+##  5 Salmonella enterica                            4124
+##  6 Norovirus Genogroup I                          4108
+##  7 Escherichia coli, Shiga toxin-producing        1219
+##  8 Shigella sonnei                                1172
+##  9 Clostridium perfringens                         926
+## 10 Legionella pneumophila                          763
+## 11 Staphylococcus aureus                           626
+## 12 Campylobacter jejuni                            604
+## 13 Scombroid toxin                                 497
 ## 14 Norovirus Genogroup II;Norovirus Genogroup II   487
-## 15                                       Unknown   426
-## 16                       Cryptosporidium unknown   414
-## 17                               Bacillus cereus   402
-## 18                                    Ciguatoxin   381
-## 19                         Campylobacter unknown   298
-## 20       Bacillus cereus;Clostridium perfringens   259</code></pre>
+## 15 Unknown                                         426
+## 16 Cryptosporidium unknown                         414
+## 17 Bacillus cereus                                 402
+## 18 Ciguatoxin                                      381
+## 19 Campylobacter unknown                           298
+## 20 Bacillus cereus;Clostridium perfringens         259</code></pre>
 </div>
 <div id="iv.-serotype-or-genotype" class="section level5">
 <h5>IV. Serotype or Genotype</h5>
@@ -918,17 +919,19 @@ implicated foods are separated by a semicolon.</p>
 outbreak_df %&gt;%
   count(`Food Vehicle`, sort = TRUE) %&gt;%
   head(10)  </code></pre>
-<pre><code>##              Food Vehicle     n
-## 1                    &lt;NA&gt; 54267
-## 2            oysters, raw   264
-## 3          multiple foods   208
-## 4  ground beef, hamburger   134
-## 5      salad, unspecified   130
-## 6                 chicken   115
-## 7    chicken, unspecified   104
-## 8     sandwich, submarine    92
-## 9               pork, BBQ    87
-## 10         chicken, other    85</code></pre>
+<pre><code>## # A tibble: 10 × 2
+##    `Food Vehicle`             n
+##    &lt;chr&gt;                  &lt;int&gt;
+##  1 &lt;NA&gt;                   54267
+##  2 oysters, raw             264
+##  3 multiple foods           208
+##  4 ground beef, hamburger   134
+##  5 salad, unspecified       130
+##  6 chicken                  115
+##  7 chicken, unspecified     104
+##  8 sandwich, submarine       92
+##  9 pork, BBQ                 87
+## 10 chicken, other            85</code></pre>
 <p>Investigate where the missing values of food vehicle are coming
 from</p>
 <pre class="r"><code>outbreak_df %&gt;%
@@ -1006,19 +1009,21 @@ sake of our study.</p>
 exposure.</p>
 <pre class="r"><code># Top 10 water exposure types by rank
 outbreak_df %&gt;%
-  count(`Water Exposure`, sort = TRUE)</code></pre>
-<pre><code>##                                                   Water Exposure     n
-## 1                                                           &lt;NA&gt; 63607
-## 2                                                 Drinking water  1256
-## 3                                  Recreational water -- treated  1085
-## 4                                Recreational water -- untreated   361
-## 5                                             Undetermined water   192
-## 6                                      Other/Environmental water   180
-## 7                   Drinking water;Recreational water -- treated    14
-## 8                       Drinking water;Other/Environmental water    11
-## 9                              Drinking water;Undetermined water     5
-## 10       Other/Environmental water;Recreational water -- treated     1
-## 11 Recreational water -- treated;Recreational water -- untreated     1</code></pre>
+  count(`Water Exposure`, sort = TRUE) %&gt;%
+  head(10)</code></pre>
+<pre><code>## # A tibble: 10 × 2
+##    `Water Exposure`                                            n
+##    &lt;chr&gt;                                                   &lt;int&gt;
+##  1 &lt;NA&gt;                                                    63607
+##  2 Drinking water                                           1256
+##  3 Recreational water -- treated                            1085
+##  4 Recreational water -- untreated                           361
+##  5 Undetermined water                                        192
+##  6 Other/Environmental water                                 180
+##  7 Drinking water;Recreational water -- treated               14
+##  8 Drinking water;Other/Environmental water                   11
+##  9 Drinking water;Undetermined water                           5
+## 10 Other/Environmental water;Recreational water -- treated     1</code></pre>
 <p>Investigate where the missing values are coming from</p>
 <pre class="r"><code>outbreak_df %&gt;%
   mutate(
@@ -1054,16 +1059,18 @@ waterborne exposure to microbial pathogens, chemicals, or toxins.</p>
 outbreak_df %&gt;%
   count(`Water Type`, sort = TRUE)%&gt;%
   head(10)</code></pre>
-<pre><code>##                                           Water Type     n
-## 1                                               &lt;NA&gt; 63983
-## 2                                          Community   693
-## 3                         Pool - Other Swimming Pool   511
-## 4                              Hot Tub/Spa/Whirlpool   348
-## 5                                              Other   346
-## 6                                     Lake/Reservoir   283
-## 7   Hot Tub/Spa/Whirlpool;Pool - Other Swimming Pool   113
-## 8                                 Individual/Private   112
-## 9                                            Unknown    76
+<pre><code>## # A tibble: 10 × 2
+##    `Water Type`                                          n
+##    &lt;chr&gt;                                             &lt;int&gt;
+##  1 &lt;NA&gt;                                              63983
+##  2 Community                                           693
+##  3 Pool - Other Swimming Pool                          511
+##  4 Hot Tub/Spa/Whirlpool                               348
+##  5 Other                                               346
+##  6 Lake/Reservoir                                      283
+##  7 Hot Tub/Spa/Whirlpool;Pool - Other Swimming Pool    113
+##  8 Individual/Private                                  112
+##  9 Unknown                                              76
 ## 10 Splash Pad/Interactive Fountain /Water Playground    41</code></pre>
 </div>
 <div id="xii.-animal-type" class="section level5">
@@ -1074,17 +1081,19 @@ Multiple animal types are separated by a semicolon.</p>
 outbreak_df %&gt;%
   count(`Animal Type`, sort = TRUE) %&gt;%
   head(10)</code></pre>
-<pre><code>##     Animal Type     n
-## 1          &lt;NA&gt; 66126
-## 2       Poultry   184
-## 3        Cattle   147
-## 4  Dog or puppy    46
-## 5        Turtle    41
-## 6          Goat    30
-## 7        Lizard    25
-## 8           Pig     8
-## 9      Hedgehog     7
-## 10        Sheep     7</code></pre>
+<pre><code>## # A tibble: 10 × 2
+##    `Animal Type`     n
+##    &lt;chr&gt;         &lt;int&gt;
+##  1 &lt;NA&gt;          66126
+##  2 Poultry         184
+##  3 Cattle          147
+##  4 Dog or puppy     46
+##  5 Turtle           41
+##  6 Goat             30
+##  7 Lizard           25
+##  8 Pig               8
+##  9 Hedgehog          7
+## 10 Sheep             7</code></pre>
 </div>
 </div>
 <div id="b.-numeric-variables-n-7" class="section level4">
@@ -1168,19 +1177,21 @@ month_freq &lt;- outbreak_df %&gt;%
   count(Month, sort = TRUE)
 
 month_freq</code></pre>
-<pre><code>##    Month    n
-## 1      1 8883
-## 2      2 8491
-## 3      3 8398
-## 4     12 7235
-## 5      4 6220
-## 6      5 4806
-## 7     11 4490
-## 8      6 4075
-## 9      7 3866
-## 10     8 3623
-## 11    10 3422
-## 12     9 3204</code></pre>
+<pre><code>## # A tibble: 12 × 2
+##    Month     n
+##    &lt;dbl&gt; &lt;int&gt;
+##  1     1  8883
+##  2     2  8491
+##  3     3  8398
+##  4    12  7235
+##  5     4  6220
+##  6     5  4806
+##  7    11  4490
+##  8     6  4075
+##  9     7  3866
+## 10     8  3623
+## 11    10  3422
+## 12     9  3204</code></pre>
 <pre class="r"><code># Visualization of frequency of outbreaks by month across all years
 ggplot(outbreak_df, aes(x = factor(Month))) +
   geom_bar(fill = &quot;steelblue&quot;) +
@@ -1198,33 +1209,11 @@ significant predictor of outbreak cases.</p>
 probable, based on the outbreak-specific definition.</p>
 <pre class="r"><code># Histogram of Illnesses by outbreak
 hist(outbreak_df$Illnesses)</code></pre>
-<p><img role="img" src="data:image/png;base64,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" width="672" /></p>
+<p><img role="img" src="data:image/png;base64,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" width="672" /></p>
 <p>Most outbreaks result in &lt;50 cases of illnesses.</p>
 <pre class="r"><code># Check for missing values
 sum(is.na(outbreak_df$Illnesses))</code></pre>
-<pre><code>## [1] 54</code></pre>
-<p>Some outbreaks are associated with NA illnesses, why could this
-be?</p>
-<pre class="r"><code># Check if a certain primary mode have several missing values of Illness
-missing_by_primary_mode &lt;- outbreak_df %&gt;%
-  group_by(`Primary Mode`) %&gt;%
-  summarize(
-    total = n(),
-    missing_illness = sum(is.na(Illnesses)),
-    percent_missing = 100 * missing_illness / total,
-    .groups = &quot;drop&quot;
-  )
-
-# Visualize
-ggplot(missing_by_primary_mode, aes(x = `Primary Mode`, y = percent_missing)) +
-  geom_col(fill = &quot;green&quot;) +
-  labs(title = &quot;Percentage of Missing Illnesses by Primary Mode&quot;,
-       x = &quot;Primary Mode&quot;,
-       y = &quot;Percent Missing (%)&quot;) +
-  theme_minimal()</code></pre>
-<p><img role="img" src="data:image/png;base64,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AABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACAClel0etNluL1OT09vuggAAMD1+T/3/s9NF4Hb6H9P//dAS753797uXxbguUmzP5HkqrKwmUpF6VQqSqdSUTqVqkSVULnpInAbTcOtCM4eoQcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIiAAA8AAAAREOABAAAgAgI8AAAARECABwAAgAgI8AAAABABAR4AAAAiIMADAABABAR4AAAAiIAADwAAABEQ4AEAACACAjwAAABEQIAHAACACAjwAAAAEAEBHgAAACIgwAMAAEAEBHgAAACIgAAPAAAAERDgAQAAIAICPAAAAERAgAcAAIAICPAAAAAQAQEeAAAAIiDAAwAAQAQEeAAAAIjAVzddgB29++W7F28fPvvj79/u9v3Pv//yX/94++lTCCGE+w9/+L9Pvv/26wOWDwAAAA4qjhb4d7+8eJvr69/99Nt5eg8hfHr724uffnl3gIIBAADA9bj9Af7zu1++yxnfX7wNIdz/4dmvf/zxxx9//Prsh/shhLcv2r9/PlAZAQAA4MBudYD//O73X9o/5Urv4fPv//02hPDwWff8mfmvv/2+++xhCOHTP/5HggcAACBOtzfAf/69/dOL395+CvcfPvv12cNd5/qff3wKITxMlt+V//bJD/cleAAAAOJ1uzuxu+h97l224xz/+mtVfg/h62/+FsKnT3/9KwR92QEAABCf2xvgv/6++8f3eWf6/Nc/Qwj3v/n3K5/8+zf3Q/j0z78+hxy90Z+enuYtAQXYz5ROpaJ0KhWlU6konUpVjns3XQBupcP9vu7dy1Hnbu8j9AAAAMCF29sCfxA5n6HP9bcQCpj9Hct+pkQqFaVTqSidSkXpVCo4tFvy+7pjLfCrHq4HAACA2++OBXgAAACI0xcW4L/+5m/h7EH5S2bd0//tG33QAwAAEKMvLMDPOpsP//zr8njv67unBwAAgAh8aQH+6//4z/shfPrt9bulye9e//YphPv/+R8a4AEAAIjSlxbgzxJ8ePui/cu7WTP853e/t1+8DfI7AAAAEYt8GLnPv7d/+u1TuP/Dr93vz8L519//v2d//fTi7ae3L356u/DVh88uvgIA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" width="672" /></p>
-<p>Most cases of outbreaks resulting in no illnesses were from water as
-the primary mode of exposure.</p>
+<pre><code>## [1] 0</code></pre>
 </div>
 <div id="iv.-hospitalizations" class="section level5">
 <h5>IV. Hospitalizations</h5>
@@ -1234,10 +1223,7 @@ the primary mode of exposure.</p>
 <pre class="r"><code># Check for missing values
 sum(is.na(outbreak_df$Hospitalizations))</code></pre>
 <pre><code>## [1] 8558</code></pre>
-<pre class="r"><code>range(outbreak_df$Hospitalizations, na.rm = TRUE)</code></pre>
-<pre><code>## [1]   0 308</code></pre>
-<p>Most outbreaks result in &lt;25 hospitalizations; however, some rare
-outbreaks have resulted in as many as 300.</p>
+<p>Several missing hospitalizations</p>
 </div>
 <div id="v.-info-on-hospitalizations" class="section level5">
 <h5>V. Info on Hospitalizations</h5>
@@ -1295,7 +1281,6 @@ types, might be hard to use this data.</p></li>
 <li><p>Etiology Status: many observations are a list of several
 confirmed/suspected statuses by serotype or genotype, which would be
 hard to use.</p></li>
-<li><p>IFSAC Category: redundant to Primary Mode and Food Type.</p></li>
 <li><p>Food Contaminated Ingredient: redundant variable, Food Type is
 enough.</p></li>
 <li><p>Info on Hospitalizations: not actually indicative of
@@ -1306,7 +1291,6 @@ hospitalizations.</p></li>
   select(
     -&#39;Serotype or Genotype&#39;,
     -&#39;Etiology Status&#39;,
-    -&#39;IFSAC Category&#39;,
     -&#39;Info On Hospitalizations&#39;,
     -&#39;Info On Deaths&#39;,
     -&#39;Food Contaminated Ingredient&#39;
@@ -1316,43 +1300,41 @@ hospitalizations.</p></li>
 colnames(outbreak_df)</code></pre>
 <pre><code>##  [1] &quot;Year&quot;             &quot;Month&quot;            &quot;State&quot;            &quot;Primary Mode&quot;    
 ##  [5] &quot;Etiology&quot;         &quot;Setting&quot;          &quot;Illnesses&quot;        &quot;Hospitalizations&quot;
-##  [9] &quot;Deaths&quot;           &quot;Food Vehicle&quot;     &quot;Water Exposure&quot;   &quot;Water Type&quot;      
-## [13] &quot;Animal Type&quot;</code></pre>
+##  [9] &quot;Deaths&quot;           &quot;Food Vehicle&quot;     &quot;IFSAC Category&quot;   &quot;Water Exposure&quot;  
+## [13] &quot;Water Type&quot;       &quot;Animal Type&quot;</code></pre>
 </div>
 <div id="b.-impute-nas" class="section level4">
 <h4>B. Impute NAs</h4>
 <ul>
-<li><p>Food Vehicle: NA values for Food Vehicle falling under the Food
-as Primary Mode of outbreak will be replaced by “Unknown”.</p></li>
-<li><p>Water Exposure: leave NAs because this variable does not apply to
-non-waterborne outbreaks.</p></li>
-<li><p>Water Type: leave NAs because this variable does not apply to
-non-waterborne outbreaks.</p></li>
+<li><p>Food Vehicle &amp; IFSAC Category: NA values for Food Vehicle
+falling under the Food as Primary Mode of outbreak will be replaced by
+“Unknown”.</p></li>
+<li><p>Water Exposure &amp; Water Type: leave NAs because this variable
+does not apply to non-waterborne outbreaks.</p></li>
 <li><p>Animal Type: leave NAs because this variable does not apply to
 non-animal associated outbreaks.</p></li>
-<li><p>Illnesses: replace NAs with 0 because we found that most NAs were
-associated with Water as the primary source of exposure, meaning
-water-born pathogens likely were detected before they resulted in any
-illnesses.</p></li>
-<li><p>Hospitalizations: replace NAs with 0, assuming no reported
-hospitalizations means none were reported with the outbreak.</p></li>
-<li><p>Deaths: replace NAs with 0, assuming no reported deaths means no
-deaths were associated with the outbreak.</p></li>
+<li><p>Deaths &amp; Hospitalizations: replace NAs with median value, to
+retain the same distribution of the variable while being robust to
+outliers (e.g. replacing with 0 or mean values would skew the
+data).</p></li>
 </ul>
 <pre class="r"><code>outbreak_df &lt;- outbreak_df %&gt;%
   mutate(
-    `Food Vehicle` = 
-      case_when(
+    `Food Vehicle` = case_when(
       is.na(`Food Vehicle`) &amp; 
         str_detect(`Primary Mode`, regex(&quot;Food&quot;, ignore_case = TRUE)) ~ &quot;Unknown&quot;,
       TRUE ~ `Food Vehicle`
     ),
-
-    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
-    
-    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
-
-    Deaths = if_else(is.na(Deaths), 0, Deaths)
+    Hospitalizations = if_else(
+      is.na(Hospitalizations),
+      median(Hospitalizations, na.rm = TRUE),
+      Hospitalizations
+    ),
+    Deaths = if_else(
+      is.na(Deaths),
+      median(Deaths, na.rm = TRUE),
+      Deaths
+    )
   )</code></pre>
 <pre class="r"><code># Check that no NAs exist in Food Vehicle when Food as Primary Mode of outbreak
 outbreak_df %&gt;%
@@ -1360,31 +1342,37 @@ outbreak_df %&gt;%
   summarize(
     missing_food_vehicle = sum(is.na(`Food Vehicle`))
   )</code></pre>
-<pre><code>##   missing_food_vehicle
+<pre><code>## # A tibble: 1 × 1
+##   missing_food_vehicle
+##                  &lt;int&gt;
 ## 1                    0</code></pre>
 <pre class="r"><code># Check that Unknown was successfully added as a new category of Food Vehicle for the NA values 
 outbreak_df %&gt;%
   count(`Food Vehicle`, sort = TRUE) %&gt;%
   head(10)  </code></pre>
-<pre><code>##              Food Vehicle     n
-## 1                    &lt;NA&gt; 41852
-## 2                 Unknown 12415
-## 3            oysters, raw   264
-## 4          multiple foods   208
-## 5  ground beef, hamburger   134
-## 6      salad, unspecified   130
-## 7                 chicken   115
-## 8    chicken, unspecified   104
-## 9     sandwich, submarine    92
-## 10              pork, BBQ    87</code></pre>
-<pre class="r"><code># Check that NAs in Illnesses and Deaths have been replaced by 0
+<pre><code>## # A tibble: 10 × 2
+##    `Food Vehicle`             n
+##    &lt;chr&gt;                  &lt;int&gt;
+##  1 &lt;NA&gt;                   41852
+##  2 Unknown                12415
+##  3 oysters, raw             264
+##  4 multiple foods           208
+##  5 ground beef, hamburger   134
+##  6 salad, unspecified       130
+##  7 chicken                  115
+##  8 chicken, unspecified     104
+##  9 sandwich, submarine       92
+## 10 pork, BBQ                 87</code></pre>
+<pre class="r"><code># Check that NAs don&#39;t exist in hospitalizations and deaths anymore
 outbreak_df %&gt;%
   summarize(
-    missing_illnesses = sum(is.na(Illnesses)),
+    missing_hosp = sum(is.na(Hospitalizations)),
     missing_deaths = sum(is.na(Deaths))
   )</code></pre>
-<pre><code>##   missing_illnesses missing_deaths
-## 1                 0              0</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##   missing_hosp missing_deaths
+##          &lt;int&gt;          &lt;int&gt;
+## 1            0              0</code></pre>
 </div>
 </div>
 <div id="standardize-and-normalize-data" class="section level3">
@@ -1411,24 +1399,27 @@ distance-based methods.</h4>
 <pre class="r"><code>outbreak_df &lt;- outbreak_df %&gt;%
   mutate(
     Hospitalizations_std = scale(Hospitalizations),
-    Deaths_std = scale(Deaths)
+    Deaths_std = scale(Deaths),
+    Illnesses_std = scale(Illnesses)
   )
 
 # Preview
 outbreak_df %&gt;%
-  select(Hospitalizations_std, Deaths_std) %&gt;%
+  select(Hospitalizations_std, Deaths_std, Illnesses_std) %&gt;%
   head(10)</code></pre>
-<pre><code>##    Hospitalizations_std  Deaths_std
-## 1             -0.184606 -0.09108019
-## 2             -0.184606 -0.09108019
-## 3             -0.184606 -0.09108019
-## 4             -0.184606 -0.09108019
-## 5             -0.184606 -0.09108019
-## 6             -0.184606 -0.09108019
-## 7             -0.184606 -0.09108019
-## 8             -0.184606 -0.09108019
-## 9             -0.184606 -0.09108019
-## 10            -0.184606 -0.09108019</code></pre>
+<pre><code>## # A tibble: 10 × 3
+##    Hospitalizations_std[,1] Deaths_std[,1] Illnesses_std[,1]
+##                       &lt;dbl&gt;          &lt;dbl&gt;             &lt;dbl&gt;
+##  1                   -0.185        -0.0911          -0.0200 
+##  2                   -0.185        -0.0911           0.0414 
+##  3                   -0.185        -0.0911          -0.0200 
+##  4                   -0.185        -0.0911          -0.0193 
+##  5                   -0.185        -0.0911          -0.0193 
+##  6                   -0.185        -0.0911           0.107  
+##  7                   -0.185        -0.0911          -0.00719
+##  8                   -0.185        -0.0911           0.0983 
+##  9                   -0.185        -0.0911           0.0222 
+## 10                   -0.185        -0.0911           2.22</code></pre>
 </div>
 </div>
 <div id="feature-engineering" class="section level3">
@@ -1454,54 +1445,59 @@ outbreak_df %&gt;%
 # Check the counts for each group
 outbreak_df %&gt;%
   count(Animal_group, sort = TRUE)</code></pre>
-<pre><code>##       Animal_group     n
-## 1       Missing/NA 66126
-## 2          Poultry   188
-## 3           Cattle   147
-## 4         Reptiles    75
-## 5       House Pets    68
-## 6         Multiple    49
-## 7  Other Ungulates    49
-## 8    Other/Unknown     6
-## 9             Fish     3
-## 10      Amphibians     2</code></pre>
+<pre><code>## # A tibble: 10 × 2
+##    Animal_group        n
+##    &lt;chr&gt;           &lt;int&gt;
+##  1 Missing/NA      66126
+##  2 Poultry           188
+##  3 Cattle            147
+##  4 Reptiles           75
+##  5 House Pets         68
+##  6 Multiple           49
+##  7 Other Ungulates    49
+##  8 Other/Unknown       6
+##  9 Fish                3
+## 10 Amphibians          2</code></pre>
 </div>
-<div id="ii.-outbreak-severity" class="section level4">
-<h4>II. Outbreak Severity</h4>
-<p>Combine illnesses, hospitalizations, and deaths into a single
-severity measure. Since illnesses might still be an object (string), we
-first convert it to numeric if needed.</p>
-<p>Outbreak Severity=Illnesses+Hospitalizations+Deaths</p>
-<pre class="r"><code>outbreak_df &lt;- outbreak_df %&gt;%
-  # Ensure numeric and replace NAs with 0
+<div id="ii.-severity-of-outbreak" class="section level4">
+<h4>II. Severity of Outbreak</h4>
+<p>Since these following variables are nested within each other
+illnesses(hospitalizations((deaths))), we’ll create 3 new ratios to
+characterize outbreak severity.</p>
+<pre class="r"><code># Compute ratios only when denominator is &gt; 0
+outbreak_df &lt;- outbreak_df %&gt;%
   mutate(
-    Illnesses = as.numeric(Illnesses),
-    Hospitalizations = as.numeric(Hospitalizations),
-    Deaths = as.numeric(Deaths),
-    
-    Illnesses = if_else(is.na(Illnesses), 0, Illnesses),
-    Hospitalizations = if_else(is.na(Hospitalizations), 0, Hospitalizations),
-    Deaths = if_else(is.na(Deaths), 0, Deaths),
-    
-    # Create outbreak_severity as sum
-    outbreak_severity = Illnesses + Hospitalizations + Deaths
+    hosp_per_ill = if_else(Illnesses &gt; 0, Hospitalizations / Illnesses, NA_real_),
+    death_per_hosp = if_else(Hospitalizations &gt; 0, Deaths / Hospitalizations, NA_real_),
+    death_per_ill = if_else(Illnesses &gt; 0, Deaths / Illnesses, NA_real_)
   )
 
-# Preview the first few rows
+# Mean ratios
 outbreak_df %&gt;%
-  select(Illnesses, Hospitalizations, Deaths, outbreak_severity) %&gt;%
-  head(10)</code></pre>
-<pre><code>##    Illnesses Hospitalizations Deaths outbreak_severity
-## 1          2                0      0                 2
-## 2         98                0      0                98
-## 3          2                0      0                 2
-## 4          3                0      0                 3
-## 5          3                0      0                 3
-## 6        200                0      0               200
-## 7         22                0      0                22
-## 8        187                0      0               187
-## 9         68                0      0                68
-## 10         0                0      0                 0</code></pre>
+  summarize(
+    mean_hosp_per_ill = mean(hosp_per_ill, na.rm = TRUE),
+    mean_death_per_hosp = mean(death_per_hosp, na.rm = TRUE),
+    mean_death_per_ill = mean(death_per_ill, na.rm = TRUE)
+  )</code></pre>
+<pre><code>## # A tibble: 1 × 3
+##   mean_hosp_per_ill mean_death_per_hosp mean_death_per_ill
+##               &lt;dbl&gt;               &lt;dbl&gt;              &lt;dbl&gt;
+## 1            0.0539              0.0423            0.00306</code></pre>
+<p>Check NAs of new ratio variables</p>
+<pre class="r"><code>outbreak_df %&gt;%
+  summarize(
+    na_hosp_per_ill = sum(is.na(hosp_per_ill)),
+    na_death_per_hosp = sum(is.na(death_per_hosp)),
+    na_death_per_ill = sum(is.na(death_per_ill))
+  )</code></pre>
+<pre><code>## # A tibble: 1 × 3
+##   na_hosp_per_ill na_death_per_hosp na_death_per_ill
+##             &lt;int&gt;             &lt;int&gt;            &lt;int&gt;
+## 1               0             51593                0</code></pre>
+<p>We’ll omit death/hospitalizations since it will be hard to handle
+NAs</p>
+<pre class="r"><code>outbreak_df &lt;- outbreak_df %&gt;%
+  select(-death_per_hosp)</code></pre>
 </div>
 <div id="iii.-binary-features-for-primary-mode" class="section level4">
 <h4>III. Binary Features for Primary Mode</h4>
@@ -1516,17 +1512,19 @@ outbreak_df %&gt;%
 outbreak_df %&gt;%
   select(`Primary Mode`, is_food_related, is_water_related, is_animal_related) %&gt;%
   head(10)</code></pre>
-<pre><code>##    Primary Mode is_food_related is_water_related is_animal_related
-## 1         Water               0                1                 0
-## 2         Water               0                1                 0
-## 3         Water               0                1                 0
-## 4         Water               0                1                 0
-## 5         Water               0                1                 0
-## 6         Water               0                1                 0
-## 7         Water               0                1                 0
-## 8         Water               0                1                 0
-## 9         Water               0                1                 0
-## 10        Water               0                1                 0</code></pre>
+<pre><code>## # A tibble: 10 × 4
+##    `Primary Mode` is_food_related is_water_related is_animal_related
+##    &lt;chr&gt;                    &lt;dbl&gt;            &lt;dbl&gt;             &lt;dbl&gt;
+##  1 Water                        0                1                 0
+##  2 Water                        0                1                 0
+##  3 Water                        0                1                 0
+##  4 Water                        0                1                 0
+##  5 Water                        0                1                 0
+##  6 Water                        0                1                 0
+##  7 Water                        0                1                 0
+##  8 Water                        0                1                 0
+##  9 Water                        0                1                 0
+## 10 Water                        0                1                 0</code></pre>
 </div>
 <div id="iv.-outbreak-monthseason" class="section level4">
 <h4>IV. Outbreak Month/Season</h4>
@@ -1545,16 +1543,18 @@ outbreak_df %&gt;%
 outbreak_df %&gt;%
   select(Month, season) %&gt;%
   head(10)</code></pre>
-<pre><code>##    Month season
-## 1      2 Winter
-## 2      6 Summer
-## 3      6 Summer
-## 4      6 Summer
-## 5      6 Summer
-## 6      6 Summer
-## 7      7 Summer
-## 8      7 Summer
-## 9      7 Summer
+<pre><code>## # A tibble: 10 × 2
+##    Month season
+##    &lt;dbl&gt; &lt;chr&gt; 
+##  1     2 Winter
+##  2     6 Summer
+##  3     6 Summer
+##  4     6 Summer
+##  5     6 Summer
+##  6     6 Summer
+##  7     7 Summer
+##  8     7 Summer
+##  9     7 Summer
 ## 10     7 Summer</code></pre>
 </div>
 <div id="v.-reordering-columns" class="section level4">
@@ -1577,50 +1577,23 @@ outbreak_df &lt;- outbreak_df %&gt;%
 # Preview first 10 rows
 outbreak_df %&gt;%
   head(10)</code></pre>
-<pre><code>##       Date Year Month season       State state_abbr Primary Mode
-## 1  1971-02 1971     2 Winter  California         CA        Water
-## 2  1971-06 1971     6 Summer    Arkansas         AR        Water
-## 3  1971-06 1971     6 Summer    Missouri         MO        Water
-## 4  1971-06 1971     6 Summer     Alabama         AL        Water
-## 5  1971-06 1971     6 Summer     Vermont         VT        Water
-## 6  1971-06 1971     6 Summer      Oregon         OR        Water
-## 7  1971-07 1971     7 Summer  New Jersey         NJ        Water
-## 8  1971-07 1971     7 Summer Mississippi         MS        Water
-## 9  1971-07 1971     7 Summer    Kentucky         KY        Water
-## 10 1971-07 1971     7 Summer  California         CA        Water
-##           Etiology Illnesses Hospitalizations Deaths outbreak_severity
-## 1           Copper         2                0      0                 2
-## 2      Hepatitis A        98                0      0                98
-## 3          Unknown         2                0      0                 2
-## 4         Selenium         3                0      0                 3
-## 5          Unknown         3                0      0                 3
-## 6          Unknown       200                0      0               200
-## 7      Hepatitis A        22                0      0                22
-## 8  Shigella sonnei       187                0      0               187
-## 9          Unknown        68                0      0                68
-## 10         Unknown         0                0      0                 0
-##    Water Exposure         Water Type Animal Type is_food_related
-## 1  Drinking water          Community        &lt;NA&gt;               0
-## 2  Drinking water              Other        &lt;NA&gt;               0
-## 3  Drinking water          Community        &lt;NA&gt;               0
-## 4  Drinking water Individual/Private        &lt;NA&gt;               0
-## 5  Drinking water          Community        &lt;NA&gt;               0
-## 6  Drinking water              Other        &lt;NA&gt;               0
-## 7  Drinking water              Other        &lt;NA&gt;               0
-## 8  Drinking water          Community        &lt;NA&gt;               0
-## 9  Drinking water              Other        &lt;NA&gt;               0
-## 10 Drinking water          Community        &lt;NA&gt;               0
-##    is_water_related is_animal_related
-## 1                 1                 0
-## 2                 1                 0
-## 3                 1                 0
-## 4                 1                 0
-## 5                 1                 0
-## 6                 1                 0
-## 7                 1                 0
-## 8                 1                 0
-## 9                 1                 0
-## 10                1                 0</code></pre>
+<pre><code>## # A tibble: 10 × 18
+##    Date     Year Month season State       state_abbr `Primary Mode` Etiology    
+##    &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;  &lt;chr&gt;       &lt;chr&gt;      &lt;chr&gt;          &lt;chr&gt;       
+##  1 1971-02  1971     2 Winter California  CA         Water          Copper      
+##  2 1971-06  1971     6 Summer Arkansas    AR         Water          Hepatitis A 
+##  3 1971-06  1971     6 Summer Missouri    MO         Water          Unknown     
+##  4 1971-06  1971     6 Summer Alabama     AL         Water          Selenium    
+##  5 1971-06  1971     6 Summer Vermont     VT         Water          Unknown     
+##  6 1971-06  1971     6 Summer Oregon      OR         Water          Unknown     
+##  7 1971-07  1971     7 Summer New Jersey  NJ         Water          Hepatitis A 
+##  8 1971-07  1971     7 Summer Mississippi MS         Water          Shigella so…
+##  9 1971-07  1971     7 Summer Kentucky    KY         Water          Unknown     
+## 10 1971-07  1971     7 Summer California  CA         Water          Unknown     
+## # ℹ 10 more variables: `IFSAC Category` &lt;chr&gt;, Illnesses &lt;dbl&gt;,
+## #   Hospitalizations &lt;dbl&gt;, Deaths &lt;dbl&gt;, `Water Exposure` &lt;chr&gt;,
+## #   `Water Type` &lt;chr&gt;, `Animal Type` &lt;chr&gt;, is_food_related &lt;dbl&gt;,
+## #   is_water_related &lt;dbl&gt;, is_animal_related &lt;dbl&gt;</code></pre>
 </div>
 </div>
 <div id="save-to-csv" class="section level3">
