@@ -8,7 +8,7 @@ output: html_document
 Set working directory to R code folder
 
 ```{r}
-setwd("C:/Users/q4q/repos/DSE511_Final_Project/R code")
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code")
 ```
 
 Load necessary libraries

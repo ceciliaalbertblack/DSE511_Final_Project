@@ -1,0 +1,28 @@
+---
+title: "DSE 511 Final Project: Exploratory Data Analysis"
+author: "Cecilia Albert-Black"
+date: "2025-11-07"
+output: html_document
+---
+
+Set working directory to R code folder
+
+```{r}
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 2. Exploratory Data Analysis/R Code")
+```
+
+Load necessary libraries
+
+```{r}
+library(readr)
+```
+
+## Exploratory Data Analysis of Clean Dataset
+
+Import dataset from Step 1
+
+```{r}
+clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code/outbreak_clean_r_v2.csv")
+
+head(clean_df)
+```
