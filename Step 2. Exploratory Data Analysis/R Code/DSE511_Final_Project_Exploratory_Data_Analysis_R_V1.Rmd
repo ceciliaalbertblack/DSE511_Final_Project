@@ -15,14 +15,403 @@ Load necessary libraries
 
 ```{r}
 library(readr)
+library(tidyverse)
+library(skimr)
+library(scales)
 ```
 
 ## Exploratory Data Analysis of Clean Dataset
 
-Import dataset from Step 1
+Import dataset from Step 1. Data Cleaning
 
 ```{r}
 clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code/outbreak_clean_r_v2.csv")
 
 head(clean_df)
 ```
+
+## Basic Dataset Overview
+
+Check structure, missing data, and basic info.
+
+```{r}
+str(clean_df)
+```
+
+Summary statistics
+
+```{r}
+skim(clean_df)
+```
+
+Check missing values again
+
+```{r}
+missing_summary <- data.frame(
+  missing_values = sort(colSums(is.na(clean_df)), decreasing = TRUE)
+)
+missing_summary
+```
+
+## Numeric Variable Distributions
+
+Explore the distributions of numeric variables
+
+```{r}
+# 1. Define numeric variables
+num_vars <- c(
+  "Year", "Month",
+  "Illnesses", "Hospitalizations", "Deaths",
+  "Illnesses_std", "Hospitalizations_std", "Deaths_std",
+  "Hosp_per_ill", "Death_per_ill"
+)
+
+# 2. Reshape the numeric data for plotting
+num_vars_long <- clean_df %>%
+  select(all_of(num_vars)) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value")
+
+# 3. Plot histograms for each numeric variable
+ggplot(num_vars_long, aes(x = value)) +
+  geom_histogram(bins = 30, fill = "steelblue", color = "white") +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Histograms of Numeric Variables",
+    x = "Value",
+    y = "Frequency"
+  )
+
+# 4. Save to repo
+ggsave(
+  filename = "Histogram_numeric_vars.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+It appears that all except Month and Year might need to be log-transformed to achieve are more normal distribution
+
+```{r}
+# 1. Define variables to log-transform
+vars_to_log <- c(
+  "Illnesses", "Hospitalizations", "Deaths",
+  "Illnesses_std", "Hospitalizations_std", "Deaths_std",
+  "Hosp_per_ill", "Death_per_ill"
+)
+
+# 2. Apply log transformation (add small constant to handle zeros)
+clean_df <- clean_df %>%
+  mutate(
+    across(
+      all_of(vars_to_log),
+      ~ log(. + 1),                # add 1 to avoid log(0)
+      .names = "log_{.col}"        # create new columns prefixed with 'log_'
+    )
+  )
+
+# 3. Reshape data for easy plotting
+log_vars_long <- clean_df %>%
+  select(starts_with("log_")) %>%
+  pivot_longer(everything(), names_to = "variable", values_to = "value")
+
+# 4. Plot histograms for each log variable and add a kernel density estimation
+ggplot(log_vars_long, aes(x = value)) +
+  # histogram as density
+  geom_histogram(aes(y = after_stat(density)),
+                 bins = 30, fill = "steelblue", color = "white", alpha = 0.6) +
+  # kernel density estimate
+  geom_density(linewidth = 0.8) +
+  facet_wrap(~ variable, scales = "free") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Histograms and Kernel Density Estimates of Log-Transformed Variables",
+    x = "Log-transformed value",
+    y = "Density"
+  )
+# 5. Save to repo
+ggsave(
+  filename = "Histograms_and_KDE_of_log_vars.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+Interpretation:
+
+-   Most outbreaks are small, with few hospitalizations or deaths.
+
+-   Log scale reveals the shape of the bulk of the data without extreme outbreaks dominating the plot.
+
+-   There is a long tail of very large outbreaks for illnesses, which may represent epidemics or reporting anomalies.
+
+## Seasonal or Yearly Trends
+
+Show total illnesses per year to identify patterns in log-transformed variables.
+
+```{r}
+# 1. Sum of illnesses per year
+yearly <- clean_df %>%
+  group_by(Year) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot (log scale)
+ggplot(yearly, aes(x = Year, y = log1p(total_illnesses))) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Total Illnesses by Year (log scale)",
+    x = "Year",
+    y = "log(Total Illnesses + 1)"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Total_illnesses_by_year.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+Interpretation:
+
+-   Log scale highlights yearly trends without being dominated by extreme outbreaks.
+
+-   Can reveal reporting improvements over time and identify peak years of large outbreaks.
+
+Examine how outbreak severity changes by season
+
+```{r}
+# 1. Median illnesses by season
+seasonal <- clean_df %>%
+  group_by(Season) %>%
+  summarise(median_illnesses = median(Illnesses, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot
+ggplot(seasonal, aes(x = Season, y = median_illnesses, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Median Illnesses by Season",
+    x = "Season",
+    y = "Median Illnesses"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Median_illnesses_by_season.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+## Top Contributing Factors
+
+Identify top 50 etiologies (causes) contributing to outbreaks
+
+```{r}
+# 1. Isolate top 50 etiologies by total illnesses
+top_etiology <- clean_df %>%
+  group_by(Etiology) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
+  arrange(desc(total_illnesses)) %>%
+  slice_head(n = 50)
+
+# 2. Plot
+ggplot(top_etiology,
+       aes(y = reorder(Etiology, total_illnesses),
+           x = total_illnesses,
+           fill = Etiology)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d(option = "mako") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 10 Etiologies by Total Illnesses",
+    x = "Total Illnesses",
+    y = "Etiology"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Top_etiologies_by_total_illnesses.png",  # file name
+  width = 12, height = 12, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+Identify top 50 settings contributing to outbreaks
+
+```{r}
+# Isolate top 50 settings by total illnesses
+top_setting <- clean_df %>%
+  group_by(Setting) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
+  arrange(desc(total_illnesses)) %>%
+  slice_head(n = 50)
+
+# 2. Plot
+ggplot(top_setting,
+       aes(y = reorder(Setting, total_illnesses),
+           x = total_illnesses,
+           fill = Setting)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d(option = "C") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 50 Settings by Total Illnesses",
+    x = "Total Illnesses",
+    y = "Setting"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Top_settings_by_total_illnesses.png",
+  width = 12, height = 12, units = "in", dpi = 200
+)
+```
+
+Interpretation:
+
+-   Highlights primary sources of outbreaks.
+
+-   Etiologies like Salmonella or Norovirus may dominate total illnesses.
+
+-   Settings like long-term care facilities can explain outbreak clustering.
+
+-   Using total illnesses (or log scale if desired) shows which factors drive high-impact outbreaks.
+
+## Severity Ratios
+
+Compare median hospitalization ratios by etiology
+
+```{r}
+# 1. Calculate median severity ratios by etiology 
+severity <- clean_df %>%
+  group_by(Etiology) %>%
+  summarise(
+    median_hosp_per_ill = median(Hosp_per_ill, na.rm = TRUE)
+  ) %>%
+  arrange(desc(median_hosp_per_ill)) %>%
+  slice_head(n = 50)  
+
+# 2. Clean up long labels for plotting 
+library(stringr)
+
+severity <- severity %>%
+  mutate(Etiology_lab = str_wrap(Etiology, width = 35))  # wrap long names
+
+# 3. Make the plot object
+ggplot(
+  severity,
+  aes(
+    x = median_hosp_per_ill,
+    y = reorder(Etiology_lab, median_hosp_per_ill),
+    fill = Etiology
+  )
+) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d(option = "mako") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 10 Etiologies by Median Hospitalizations per Illness",
+    x = "Median Hospitalizations per Illness",
+    y = "Etiology"
+  )
+
+
+# 4. Save to file
+ggsave(
+  filename = "Top_etiologies_by_median_hospitalizations_per_illness.png", 
+  width = 12, height = 12,
+  units = "in",
+  dpi = 300
+)
+```
+
+Interpretation:
+
+-   Median ratios are more robust to extreme cases than the mean.
+
+-   Etiologies with higher hospitalization or death rates may indicate more severe outbreaks, even if total outbreak counts are lower.
+
+## Deaths by Etiology
+
+Total deaths by etiology
+
+```{r}
+# 1. Compute total deaths per etiology
+deaths_total <- clean_df %>%
+  group_by(Etiology) %>%
+  summarise(
+    total_deaths = sum(Deaths, na.rm = TRUE),
+    total_illnesses = sum(Illnesses, na.rm = TRUE),
+    n_outbreaks = n()
+  ) %>%
+  filter(total_deaths > 0) %>%        
+  arrange(desc(total_deaths)) %>%
+  slice_head(n = 50)                  
+
+# 2. Plot
+ggplot(deaths_total,
+       aes(y = reorder(Etiology, total_deaths),
+           x = total_deaths,
+           fill = Etiology)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d(option = "plasma") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 50 Etiology  by Total Deaths",
+    x = "Total deaths (sum across all outbreaks)",
+    y = "Etiology"
+  )
+
+
+# 3. Save to repo
+ggsave(
+  filename = "Top_etiology_by_total_deaths.png",
+  width = 12, height = 12, units = "in", dpi = 300
+)
+```
+
+Mean deaths per outbreak: highlights average lethality per outbreak
+
+```{r}
+# 1. Compute mean deaths per etiology
+deaths_mean <- clean_df %>%
+  group_by(Etiology) %>%
+  summarise(
+    n_outbreaks = n(),
+    mean_deaths = mean(Deaths, na.rm = TRUE)
+  ) %>%
+  filter(n_outbreaks >= 50) %>%
+  arrange(desc(mean_deaths)) %>%
+  slice_head(n = 50)
+
+# 2. Plot
+ggplot(deaths_mean,
+       aes(y = reorder(Etiology, mean_deaths),
+           x = mean_deaths,
+           fill = Etiology)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d(option = "rocket") +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 50 Etiology Groups by Average Deaths per Outbreak",
+    x = "Average deaths per outbreak",
+    y = "Etiology group"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Top_etiology_by_mean_deaths.png",
+  width = 12, height = 12, units = "in", dpi = 300
+)
+```
+
+This metric balances outbreak count and lethality. A group with few but deadly outbreaks (e.g., *Listeria*) can stand out compared to frequent but mild ones (e.g., *Norovirus*).
+
+## Correlation Heatmap
