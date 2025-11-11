@@ -30,7 +30,7 @@ clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Clean
 head(clean_df)
 ```
 
-## Basic Dataset Overview
+## I. Basic Dataset Overview
 
 Check structure, missing data, and basic info.
 
@@ -53,7 +53,7 @@ missing_summary <- data.frame(
 missing_summary
 ```
 
-## Numeric Variable Distributions
+## II. Numeric Variable Distributions
 
 Explore the distributions of numeric variables
 
@@ -145,73 +145,11 @@ Interpretation:
 
 -   There is a long tail of very large outbreaks for illnesses, which may represent epidemics or reporting anomalies.
 
-## Seasonal or Yearly Trends
+## III. Top Contributing Factors
 
-Show total illnesses per year to identify patterns in log-transformed variables.
+### Etiologies
 
-```{r}
-# 1. Sum of illnesses per year
-yearly <- clean_df %>%
-  group_by(Year) %>%
-  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
-  ungroup()
-
-# 2. Plot (log scale)
-ggplot(yearly, aes(x = Year, y = log1p(total_illnesses))) +
-  geom_line(color = "steelblue", linewidth = 1) +
-  geom_point(color = "steelblue", size = 2) +
-  theme_minimal(base_size = 13) +
-  labs(
-    title = "Total Illnesses by Year (log scale)",
-    x = "Year",
-    y = "log(Total Illnesses + 1)"
-  )
-
-# 3. Save to repo
-ggsave(
-  filename = "Total_illnesses_by_year.png",  # file name
-  width = 8, height = 5, units = "in",          # size in inches
-  dpi = 300                                     # resolution for publication-quality image
-)
-```
-
-Interpretation:
-
--   Log scale highlights yearly trends without being dominated by extreme outbreaks.
-
--   Can reveal reporting improvements over time and identify peak years of large outbreaks.
-
-Examine how outbreak severity changes by season
-
-```{r}
-# 1. Median illnesses by season
-seasonal <- clean_df %>%
-  group_by(Season) %>%
-  summarise(median_illnesses = median(Illnesses, na.rm = TRUE)) %>%
-  ungroup()
-
-# 2. Plot
-ggplot(seasonal, aes(x = Season, y = median_illnesses, fill = Season)) +
-  geom_col(show.legend = FALSE) +
-  scale_fill_viridis_d() +
-  theme_minimal(base_size = 13) +
-  labs(
-    title = "Median Illnesses by Season",
-    x = "Season",
-    y = "Median Illnesses"
-  )
-
-# 3. Save to repo
-ggsave(
-  filename = "Median_illnesses_by_season.png",  # file name
-  width = 8, height = 5, units = "in",          # size in inches
-  dpi = 300                                     # resolution for publication-quality image
-)
-```
-
-## Top Contributing Factors
-
-Identify top 50 etiologies (causes) contributing to outbreaks
+#### a. Top 50 Etiologies Resulting in the Most Total Number of Illnesses
 
 ```{r}
 # 1. Isolate top 50 etiologies by total illnesses
@@ -230,7 +168,7 @@ ggplot(top_etiology,
   scale_fill_viridis_d(option = "mako") +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 10 Etiologies by Total Illnesses",
+    title = "Top 50 Etiologies by Total Illnesses",
     x = "Total Illnesses",
     y = "Etiology"
   )
@@ -243,50 +181,7 @@ ggsave(
 )
 ```
 
-Identify top 50 settings contributing to outbreaks
-
-```{r}
-# Isolate top 50 settings by total illnesses
-top_setting <- clean_df %>%
-  group_by(Setting) %>%
-  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
-  arrange(desc(total_illnesses)) %>%
-  slice_head(n = 50)
-
-# 2. Plot
-ggplot(top_setting,
-       aes(y = reorder(Setting, total_illnesses),
-           x = total_illnesses,
-           fill = Setting)) +
-  geom_col(show.legend = FALSE) +
-  scale_fill_viridis_d(option = "C") +
-  theme_minimal(base_size = 13) +
-  labs(
-    title = "Top 50 Settings by Total Illnesses",
-    x = "Total Illnesses",
-    y = "Setting"
-  )
-
-# 3. Save to repo
-ggsave(
-  filename = "Top_settings_by_total_illnesses.png",
-  width = 12, height = 12, units = "in", dpi = 200
-)
-```
-
-Interpretation:
-
--   Highlights primary sources of outbreaks.
-
--   Etiologies like Salmonella or Norovirus may dominate total illnesses.
-
--   Settings like long-term care facilities can explain outbreak clustering.
-
--   Using total illnesses (or log scale if desired) shows which factors drive high-impact outbreaks.
-
-## Severity Ratios
-
-Compare median hospitalization ratios by etiology
+#### b. Top 50 Etiologies by Hospitalization Severity
 
 ```{r}
 # 1. Calculate median severity ratios by etiology 
@@ -317,7 +212,7 @@ ggplot(
   scale_fill_viridis_d(option = "mako") +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 10 Etiologies by Median Hospitalizations per Illness",
+    title = "Top 50 Etiologies by Median Hospitalizations per Illness",
     x = "Median Hospitalizations per Illness",
     y = "Etiology"
   )
@@ -332,130 +227,180 @@ ggsave(
 )
 ```
 
-Interpretation:
-
--   Median ratios are more robust to extreme cases than the mean.
-
--   Etiologies with higher hospitalization or death rates may indicate more severe outbreaks, even if total outbreak counts are lower.
-
-## Deaths by Etiology
-
-Total deaths by etiology
+Etiologies which have a hospitalization/illness rate \>50%
 
 ```{r}
-# 1. Compute total deaths per etiology
-deaths_total <- clean_df %>%
+# Identify etiologies where median Hosp_per_ill > 0.5 (i.e., >50%)
+high_severity <- severity %>%
+  filter(median_hosp_per_ill > 0.5)
+
+# View results
+high_severity
+
+```
+
+#### d. Top 50 Etiologies by Death Severity
+
+```{r}
+# 1. Calculate median severity ratios by etiology 
+severity <- clean_df %>%
   group_by(Etiology) %>%
   summarise(
-    total_deaths = sum(Deaths, na.rm = TRUE),
-    total_illnesses = sum(Illnesses, na.rm = TRUE),
-    n_outbreaks = n()
+    median_death_per_ill = median(Death_per_ill, na.rm = TRUE)
   ) %>%
-  filter(total_deaths > 0) %>%        
-  arrange(desc(total_deaths)) %>%
-  slice_head(n = 50)                  
+  arrange(desc(median_death_per_ill)) %>%
+  slice_head(n = 50)  
 
-# 2. Plot
-ggplot(deaths_total,
-       aes(y = reorder(Etiology, total_deaths),
-           x = total_deaths,
-           fill = Etiology)) +
+# 2. Clean up long labels for plotting 
+library(stringr)
+
+severity <- severity %>%
+  mutate(Etiology_lab = str_wrap(Etiology, width = 35))  # wrap long names
+
+# 3. Make the plot object
+ggplot(
+  severity,
+  aes(
+    x = median_death_per_ill,
+    y = reorder(Etiology_lab, median_death_per_ill),
+    fill = Etiology
+  )
+) +
   geom_col(show.legend = FALSE) +
-  scale_fill_viridis_d(option = "plasma") +
+  scale_fill_viridis_d(option = "mako") +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 50 Etiology  by Total Deaths",
-    x = "Total deaths (sum across all outbreaks)",
+    title = "Top 50 Etiologies by Median Death per Illness",
+    x = "Median Death per Illness",
     y = "Etiology"
   )
 
 
-# 3. Save to repo
+# 4. Save to file
 ggsave(
-  filename = "Top_etiology_by_total_deaths.png",
-  width = 12, height = 12, units = "in", dpi = 300
+  filename = "Top_etiologies_by_median_death_per_illness.png", 
+  width = 12, height = 12,
+  units = "in",
+  dpi = 300
 )
 ```
 
-Mean deaths per outbreak: highlights average lethality per outbreak
+Etiologies with a high death/illness rate, say above 20%
 
 ```{r}
-# 1. Compute mean deaths per etiology
-deaths_mean <- clean_df %>%
-  group_by(Etiology) %>%
-  summarise(
-    n_outbreaks = n(),
-    mean_deaths = mean(Deaths, na.rm = TRUE)
-  ) %>%
-  filter(n_outbreaks >= 50) %>%
-  arrange(desc(mean_deaths)) %>%
+# Identify etiologies where median Death_per_ill > 0.5 (i.e., >20%)
+high_lethality <- severity %>%
+  filter(median_death_per_ill > 0.20)
+
+# View results
+high_lethality
+
+```
+
+### Settings
+
+#### a. Top 50 Settings in Which Illnesses Occur
+
+```{r}
+# Isolate top 50 settings by total illnesses
+top_setting <- clean_df %>%
+  group_by(Setting) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
+  arrange(desc(total_illnesses)) %>%
   slice_head(n = 50)
 
 # 2. Plot
-ggplot(deaths_mean,
-       aes(y = reorder(Etiology, mean_deaths),
-           x = mean_deaths,
-           fill = Etiology)) +
+ggplot(top_setting,
+       aes(y = reorder(Setting, total_illnesses),
+           x = total_illnesses,
+           fill = Setting)) +
   geom_col(show.legend = FALSE) +
-  scale_fill_viridis_d(option = "rocket") +
+  scale_fill_viridis_d(option = "C") +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 50 Etiology Groups by Average Deaths per Outbreak",
-    x = "Average deaths per outbreak",
-    y = "Etiology group"
+    title = "Top 50 Settings by Total Illnesses",
+    x = "Total Illnesses",
+    y = "Setting"
   )
 
 # 3. Save to repo
 ggsave(
-  filename = "Top_etiology_by_mean_deaths.png",
-  width = 12, height = 12, units = "in", dpi = 300
+  filename = "Top_settings_by_total_illnesses.png",
+  width = 12, height = 12, units = "in", dpi = 200
 )
 ```
 
-This metric balances outbreak count and lethality. A group with few but deadly outbreaks (e.g., *Listeria*) can stand out compared to frequent but mild ones (e.g., *Norovirus*).
+### Primary Mode
 
-## Correlation Heatmap
+#### a. Most Risky Primary Mode of Outbreak
 
 ```{r}
-# 1. Call out variables
-corr_cols <- c("Illnesses", "Hospitalizations", "Deaths", "Hosp_per_ill", "Death_per_ill")
+primary_mode_summary <- clean_df %>%
+  group_by(Primary_mode) %>%
+  summarise(
+    median_illnesses     = median(Illnesses, na.rm = TRUE),
+    mean_hosp_per_ill    = mean(Hosp_per_ill, na.rm = TRUE),
+    mean_death_per_ill   = mean(Death_per_ill, na.rm = TRUE),
+    n_outbreaks          = n(),   # gives context about reporting volume
+    .groups = "drop"
+  ) %>%
+  arrange(desc(median_illnesses))
 
-# 2. Compute correlation matrix
-corr_matrix <- clean_df %>%
-  select(all_of(corr_cols)) %>%
-  cor(use = "pairwise.complete.obs") %>%
-  as.data.frame()
-
-# 3. Convert to long format for ggplot
-corr_long <- corr_matrix %>%
-  mutate(var1 = rownames(corr_matrix)) %>%
-  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
-
-# 4. Plot
-ggplot(corr_long, aes(x = var1, y = var2, fill = correlation)) +
-  geom_tile() +
-  geom_text(aes(label = round(correlation, 2)), color = "black", size = 3) +
-  scale_fill_gradient2(low = "steelblue", mid = "white", high = "darkred", midpoint = 0) +
-  coord_equal() +
-  theme_minimal(base_size = 13) +
-  labs(
-    title = "Correlation Heatmap of Key Variables",
-    x = NULL,
-    y = NULL
-  )
-
-# 5. Save to repo
-ggsave(
-  filename = "Correlation_heatmap_num_vars.png",
-  width = 8, height = 8, units = "in", dpi = 300
-)
+primary_mode_summary
 ```
 
-Strong correlations can indicate redundant variables; none are identified are highly correlated.
+Plot of illnesses by primary mode
+
+```{r}
+# Plot median illnesses by primary mode
+ggplot(primary_mode_summary, aes(x = reorder(Primary_mode, -median_illnesses), y = median_illnesses, fill = Primary_mode)) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Median Illnesses by Primary Mode",
+    x = "Primary Mode",
+    y = "Median Illnesses per Outbreak"
+  )
+
+# Save
+ggsave("Median_Illnesses_by_Primary_Mode.png", width = 8, height = 5, units = "in", dpi = 300)
+```
+
+Plot of hospitalizations/illnesses by primary mode
+
+```{r}
+ggplot(primary_mode_summary, aes(x = reorder(Primary_mode, -median_illnesses), y = mean_hosp_per_ill, fill = Primary_mode)) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Mean Hosp/Ill by Primary Mode",
+    x = "Primary Mode",
+    y = "Mean Hosp/Ill per Outbreak"
+  )
+
+# Save
+ggsave("Mean_Hosp_per_Ill_by_Primary_Mode.png", width = 8, height = 5, units = "in", dpi = 300)
+```
+
+Plot of deaths/illnesses by primary mode
+
+```{r}
+ggplot(primary_mode_summary, aes(x = reorder(Primary_mode, -median_illnesses), y = mean_death_per_ill, fill = Primary_mode)) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Mean Death/Ill by Primary Mode",
+    x = "Primary Mode",
+    y = "Mean Death/Ill per Outbreak"
+  )
+
+# Save
+ggsave("Mean_Death_per_Ill_by_Primary_Mode.png", width = 8, height = 5, units = "in", dpi = 300)
+```
 
 ## Spatial Trends
 
-Median illness counts by state (across all years)
+### a. Median Illness by State
 
 ```{r}
 # 1. Compute median illnesses per state
@@ -479,7 +424,7 @@ ggplot(
   labs(
     title = "Top 15 States by Median Number of Illnesses",
     x = "State",
-    y = "Median Illnesses"
+    y = "Median Number of Illnesses"
   )
 
 # 3. Save the plot
@@ -489,7 +434,7 @@ ggsave(
 )
 ```
 
-Median yearly illnesses by state
+### b. Median Yearly Illness by State
 
 ```{r}
 # 1. Compute total illnesses per state-year, then median yearly illness rate per state
@@ -525,78 +470,274 @@ ggsave(
 )
 ```
 
-Median yearly hospitalizations by state
+### c. Mean Yearly Hospitalization/Illness Rate by State
 
 ```{r}
-# 1. Compute total hospitalizations per state-year, then median yearly hospitalizations per state
-yearly_hosp <- clean_df %>%
+# 1. Compute mean Hosp_per_ill per state-year, then mean across years per state
+yearly_hosp_ratio <- clean_df %>%
   group_by(State_abbr, Year) %>%
-  summarise(yearly_hospitalizations = sum(Hospitalizations, na.rm = TRUE), .groups = "drop") %>%
+  summarise(yearly_hosp_ratio = mean(Hosp_per_ill, na.rm = TRUE), .groups = "drop") %>%
   group_by(State_abbr) %>%
-  summarise(median_yearly_hospitalizations = median(yearly_hospitalizations, na.rm = TRUE)) %>%
-  arrange(desc(median_yearly_hospitalizations)) %>%
+  summarise(mean_yearly_hosp_ratio = mean(yearly_hosp_ratio, na.rm = TRUE)) %>%
+  arrange(desc(mean_yearly_hosp_ratio)) %>%
   slice_head(n = 15)
 
-# 2. Plot top 15 states by median yearly hospitalizations
+# 2. Plot top 15 states by mean yearly hospitalization ratio
 ggplot(
-  yearly_hosp,
+  yearly_hosp_ratio,
   aes(
-    x = reorder(State_abbr, -median_yearly_hospitalizations),
-    y = median_yearly_hospitalizations,
+    x = reorder(State_abbr, -mean_yearly_hosp_ratio),
+    y = mean_yearly_hosp_ratio,
     fill = State_abbr
   )
 ) +
   geom_col(show.legend = FALSE) +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 15 States by Median Yearly Hospitalizations",
+    title = "Top 15 States by Mean Yearly Hospitalization/Illnesses",
     x = "State",
-    y = "Median Yearly Hospitalizations"
+    y = "Mean Yearly Hospitalization Ratio"
   )
 
-# 3. Save the plot
+# 3. Save plot
 ggsave(
-  filename = "Top_15_States_by_Median_Yearly_Hospitalizations.png",
+  filename = "Top_15_States_by_Mean_Yearly_Hosp_per_Ill.png",
   width = 10, height = 5, units = "in", dpi = 300
 )
 ```
 
-Median yearly deaths rate by state
+### d. Mean Yearly Deaths/Illness Rate by State
 
 ```{r}
-# 1. Compute total deaths per state-year, then median yearly deaths per state
-yearly_deaths <- clean_df %>%
+# 1. Compute mean Death_per_ill per state-year, then mean across years per state
+yearly_death_ratio <- clean_df %>%
   group_by(State_abbr, Year) %>%
-  summarise(yearly_deaths = sum(Deaths, na.rm = TRUE), .groups = "drop") %>%
+  summarise(yearly_death_ratio = mean(Death_per_ill, na.rm = TRUE), .groups = "drop") %>%
   group_by(State_abbr) %>%
-  summarise(median_yearly_deaths = median(yearly_deaths, na.rm = TRUE)) %>%
-  arrange(desc(median_yearly_deaths)) %>%
+  summarise(mean_yearly_death_ratio = mean(yearly_death_ratio, na.rm = TRUE)) %>%
+  arrange(desc(mean_yearly_death_ratio)) %>%
   slice_head(n = 15)
 
-# 2. Plot top 15 states by median yearly deaths
+# 2. Plot top 15 states by mean yearly death ratio
 ggplot(
-  yearly_deaths,
+  yearly_death_ratio,
   aes(
-    x = reorder(State_abbr, -median_yearly_deaths),
-    y = median_yearly_deaths,
+    x = reorder(State_abbr, -mean_yearly_death_ratio),
+    y = mean_yearly_death_ratio,
     fill = State_abbr
   )
 ) +
   geom_col(show.legend = FALSE) +
   theme_minimal(base_size = 13) +
   labs(
-    title = "Top 15 States by Median Yearly Deaths",
+    title = "Top 15 States by Mean Yearly Deaths/Illnesses",
     x = "State",
-    y = "Median Yearly Deaths"
+    y = "Mean Yearly Death Ratio"
   )
 
 # 3. Save the plot
 ggsave(
-  filename = "Top_15_States_by_Median_Yearly_Deaths.png",
+  filename = "Top_15_States_by_Mean_Yearly_Death_per_Ill.png",
   width = 10, height = 5, units = "in", dpi = 300
 )
 ```
-
-It appears that outbreak severity is most pronounced in areas outside of the major 51 US states. Maybe we'll consider omitting these areas, since we have limited information on them. However, this will introduce a bias in our dataset since we will not be considering US territories, native american reservations, and army bases.
 
 ## Temporal Trends
+
+### a. Seasonal Decomposition
+
+Median illness by season across all types of outbreaks and dates
+
+```{r}
+# 1. Median illnesses by season
+seasonal <- clean_df %>%
+  group_by(Season) %>%
+  summarise(median_illnesses = median(Illnesses, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot
+ggplot(seasonal, aes(x = Season, y = median_illnesses, fill = Season)) +
+  geom_col(show.legend = FALSE) +
+  scale_fill_viridis_d() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Median Illnesses by Season",
+    x = "Season",
+    y = "Median Illnesses"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Median_illnesses_by_season.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+Most outbreaks happen in winter, then spring, fall, and least in summer.
+
+### b. Monthly Decomposition
+
+**Plot of total illnesses over time (log transformed)**
+
+```{r}
+# 1. Sum of illnesses per year
+yearly <- clean_df %>%
+  group_by(Year) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot (log scale)
+ggplot(yearly, aes(x = Year, y = log1p(total_illnesses))) +
+  geom_line(color = "steelblue", linewidth = 1) +
+  geom_point(color = "steelblue", size = 2) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Total Illnesses by Year (log scale)",
+    x = "Year",
+    y = "log(Total Illnesses + 1)"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Log_total_illnesses_by_year.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+Clearly, there's an outlier; let's identify it:
+
+```{r}
+# 1. Filter all outbreaks from 1993-03
+march_1993 <- clean_df %>%
+  filter(Year == 1993, Month == 3)
+
+# 2. See summary of illnesses and key variables
+march_1993 %>%
+  summarise(
+    total_illnesses = sum(Illnesses, na.rm = TRUE),
+    n_outbreaks = n(),
+    states_involved = n_distinct(State_abbr),
+    top_state = State_abbr[which.max(Illnesses)],
+    primary_mode = names(sort(table(Primary_mode), decreasing = TRUE))[1]
+  )
+
+# 3. Identify which state it occurred in
+march_1993 %>%
+  group_by(State_abbr, Etiology) %>%
+  summarise(
+    total_ill = sum(Illnesses, na.rm = TRUE),
+    hosp_per_ill = sum(Hosp_per_ill),
+    deaths_per_ill = sum(Death_per_ill)) %>%
+  arrange(desc(total_ill)) %>%
+  slice_head(n = 10)
+```
+
+This date 1993-03-01 had 403,114 illness cases. According to a google search, this incident was caused by the 1993 Milwaukee Cryptosporidium waterborne outbreak, which sickened over 400,000 people — the largest waterborne disease outbreak in U.S. history.
+
+**Plot of total hospitalizations over time (log transformed)**
+
+```{r}
+# 1. Sum of hospitalizations per year
+yearly <- clean_df %>%
+  group_by(Year) %>%
+  summarise(total_hosp = sum(Hospitalizations, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot (log scale)
+ggplot(yearly, aes(x = Year, y = log1p(total_hosp))) +
+  geom_line(color = "orange", linewidth = 1) +
+  geom_point(color = "orange", size = 2) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Total Hospitalizations by Year (log scale)",
+    x = "Year",
+    y = "log(Total Hosp + 1)"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Log_total_hosp_by_year.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+**Plot of total deaths over time (log transformed)**
+
+```{r}
+# 1. Sum of hospitalizations per year
+yearly <- clean_df %>%
+  group_by(Year) %>%
+  summarise(total_deaths = sum(Deaths, na.rm = TRUE)) %>%
+  ungroup()
+
+# 2. Plot (log scale)
+ggplot(yearly, aes(x = Year, y = log1p(total_deaths))) +
+  geom_line(color = "red", linewidth = 1) +
+  geom_point(color = "red", size = 2) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Total Deaths by Year (log scale)",
+    x = "Year",
+    y = "log(Total Deaths + 1)"
+  )
+
+# 3. Save to repo
+ggsave(
+  filename = "Log_total_deaths_by_year.png",  # file name
+  width = 8, height = 5, units = "in",          # size in inches
+  dpi = 300                                     # resolution for publication-quality image
+)
+```
+
+While total hospitalizations and deaths have increased over time, this may be due to increasing population size. So, it may be better to assess the ratio of hospitalizations/illnesses and deaths/illnesses over time.
+
+**Plot of hospitalizations per illnesses over time**
+
+```{r}
+# 1. Monthly tends in hospitalizations per illnesses
+monthly_trends <- clean_df %>%
+  group_by(Year, Month) %>%
+  summarise(total_hosp_per_ill = sum(Hosp_per_ill, na.rm = TRUE)) %>%
+  mutate(Date = as.Date(paste(Year, Month, "01", sep = "-")))
+
+# 2. Plot of total illnesses 
+ggplot(monthly_trends, aes(x = Date, y = total_hosp_per_ill)) +
+  geom_line() +
+  theme_minimal() +
+  geom_smooth() +
+  labs(title = "Monthly Trends in Total Hospitalizations/Illnesses")
+
+# 3. Save to repo
+ggsave(
+  filename = "Monthly_trend_total_hosp_per_ill.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+**Plot of deaths per illnesses over time**
+
+```{r}
+# 1. Monthly tends in deaths per illnesses
+monthly_trends <- clean_df %>%
+  group_by(Year, Month) %>%
+  summarise(total_death_per_ill = sum(Death_per_ill, na.rm = TRUE)) %>%
+  mutate(Date = as.Date(paste(Year, Month, "01", sep = "-")))
+
+# 2. Plot of total illnesses 
+ggplot(monthly_trends, aes(x = Date, y = total_death_per_ill)) +
+  geom_line() +
+  theme_minimal() +
+  geom_smooth() +
+  labs(title = "Monthly Trends in Total Deaths/Illnesses")
+
+# 3. Save to repo
+ggsave(
+  filename = "Monthly_trend_total_death_per_ill.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+It seems like illnesses are becoming more severe over time, especially since 2000. Or, this could be reflecting an increased rate or improved system for reporting these metrics.

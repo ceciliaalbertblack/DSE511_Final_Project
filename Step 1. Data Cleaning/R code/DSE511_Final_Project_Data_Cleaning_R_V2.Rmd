@@ -701,7 +701,7 @@ For readability
 # Define the desired column order
 desired_order <- c(
   "Year", "Month", "Date", "Season", "State", "State_abbr",
-  "Primary_Mode", "Setting", "Etiology", "Etiology_group", "IFSAC_category",
+  "Primary_mode", "Setting", "Etiology", "Etiology_group", "IFSAC_category",
   "Food_vehicle", "Water_exposure", "Water_type", "Water_type_group",
   "Animal_type", "Animal_type_group", "Illnesses", "Hospitalizations", "Deaths",
   "Hospitalizations_std", "Deaths_std", "Illnesses_std", 
