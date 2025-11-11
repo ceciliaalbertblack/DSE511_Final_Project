@@ -1,0 +1,49 @@
+---
+title: "DSE 511 Final Project Machine Learning in R"
+author: "Cecilia Albert-Black"
+date: "2025-11-11"
+output: html_document
+---
+
+Set working directory to R code folder
+
+```{r}
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 4. Supervised Machine Learning/R Code")
+```
+
+Load necessary libraries
+
+```{r}
+library(readr)
+library(tidyverse)
+```
+
+Import dataset from Step 1. Data Cleaning
+
+```{r}
+clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code/outbreak_clean_r_v2.csv")
+
+head(clean_df)
+```
+
+## Defining the Objective
+
+We want to model Illnesses, Hospitalizations, and Deaths, which are:
+
+-   Count-based (non-negative, right-skewed)
+
+-   Highly overdispersed (variance \>\> mean)
+
+-   Driven by categorical predictors (Etiology, Setting, Season, etc.)
+
+-   Complex, nonlinear, and potentially interactive (e.g., Setting × Mode interactions)
+
+Because of these confounding complexities, no single ML type that is “perfect.”
+
+We will be comparing 3 different models:
+
+1.  Multiple Linear Regression (baseline model)
+2.  Random Forest (robust nonlinear ML model)
+3.  Gradient Boosting (Precision-focused ML model)
+
+## Modeling
