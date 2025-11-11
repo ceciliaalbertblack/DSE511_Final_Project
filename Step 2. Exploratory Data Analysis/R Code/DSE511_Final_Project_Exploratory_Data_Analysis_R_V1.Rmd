@@ -60,7 +60,6 @@ Explore the distributions of numeric variables
 ```{r}
 # 1. Define numeric variables
 num_vars <- c(
-  "Year", "Month",
   "Illnesses", "Hospitalizations", "Deaths",
   "Illnesses_std", "Hospitalizations_std", "Deaths_std",
   "Hosp_per_ill", "Death_per_ill"
@@ -90,7 +89,7 @@ ggsave(
 )
 ```
 
-It appears that all except Month and Year might need to be log-transformed to achieve are more normal distribution
+It appears that all variables will need to be log-transformed to achieve are more normal distribution
 
 ```{r}
 # 1. Define variables to log-transform
@@ -137,13 +136,7 @@ ggsave(
 )
 ```
 
-Interpretation:
-
--   Most outbreaks are small, with few hospitalizations or deaths.
-
--   Log scale reveals the shape of the bulk of the data without extreme outbreaks dominating the plot.
-
--   There is a long tail of very large outbreaks for illnesses, which may represent epidemics or reporting anomalies.
+Count data might not be normalized, consider fitting other distribution functions.
 
 ## III. Top Contributing Factors
 

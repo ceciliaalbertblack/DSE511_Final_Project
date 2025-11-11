@@ -1,0 +1,342 @@
+---
+title: "DSE 511 Final Project Cluster Analysis in R"
+author: "Cecilia Albert-Black"
+date: "2025-11-11"
+output: html_document
+---
+
+Set working directory to R code folder
+
+```{r}
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 3. Cluster Analysis/R Code")
+```
+
+Load necessary libraries
+
+```{r}
+library(readr)
+library(tidyverse)
+library(fitdistrplus)
+library(factoextra)
+```
+
+Import dataset from Step 1. Data Cleaning
+
+```{r}
+clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code/outbreak_clean_r_v2.csv")
+
+head(clean_df)
+```
+
+## Cluster Analysis
+
+Select variables to cluster
+
+```{r}
+num_vars <- clean_df %>%
+  dplyr::select(
+    Illnesses_std,
+    Hospitalizations_std,
+    Deaths_std,
+    Hosp_per_ill,
+    Death_per_ill
+  )
+```
+
+### I. Explore Correlations Among Variables
+
+```{r}
+cor(num_vars)
+pairs(num_vars)
+```
+
+### II. Dimensionality Reduction using Principal Component Analysis
+
+```{r}
+pca_result <- prcomp(num_vars, scale. = TRUE)
+summary(pca_result)
+plot(pca_result, type = "l")  # Scree plot
+```
+
+Extracted PCA scores
+
+```{r}
+pca_scores <- as.data.frame(pca_result$x[, 1:3])
+pca_scores
+```
+
+### Apply Clustering Method
+
+#### I. K-Means
+
+```{r}
+set.seed(123)
+kmeans_result <- kmeans(pca_scores, centers = 3, nstart = 25)
+clean_df$cluster <- factor(kmeans_result$cluster)
+```
+
+Visualize
+
+```{r}
+pca_clust <- fviz_cluster(kmeans_result, data = pca_scores, geom = "point", ellipse = TRUE)
+pca_clust
+
+# Save the plot
+ggsave(
+  filename = "PCA_kmeans_clusters.png",  # File name and extension
+  plot = pca_clust,                      # Plot object to save
+  width = 8,                             # Width in inches
+  height = 6,                            # Height in inches
+  dpi = 300                              # Resolution (good for publication)
+)
+```
+
+It seems like there is one major outlier. My guess is that it's the 400,000 illnesses in March 1993 from a water borne outbreak we identified during the EDA.
+
+### Cluster Characterization
+
+#### a. By Numeric Variables
+
+Examine numeric variable summaries
+
+```{r}
+clean_df %>%
+  group_by(cluster) %>%
+  summarise(across(
+    c(Illnesses_std, Hospitalizations_std, Deaths_std, Hosp_per_ill, Death_per_ill),
+    mean, na.rm = TRUE
+  ))
+```
+
+It appears the following clusters could be described as follows
+
+-   Cluster 1: severe outbreaks
+
+-   Cluster 2: mild outbreaks
+
+-   Cluster 3: anomaly outbreaks
+
+Now lets compare the outbreaks by categorical variables
+
+#### b. By Most Prevalent Primary Mode
+
+```{r}
+# 1. Identify top primary modes causing illnesses
+top_mode <- clean_df %>%
+  group_by(Primary_mode) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(total_illnesses)) %>%
+  pull(Primary_mode)   # <- this is the key fix
+
+# 2. Filter dataset to those Primary_mode
+df_top <- clean_df %>%
+  filter(Primary_mode %in% top_mode)
+
+# 3. Reorder Primary_mode factor by frequency
+df_top <- df_top %>%
+  mutate(Primary_mode = forcats::fct_infreq(Primary_mode))
+
+# 4. Plot
+ggplot(df_top, aes(x = Primary_mode, fill = cluster)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Cluster Composition by Primary Mode",
+    y = "Proportion",
+    x = "Primary_mode"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8)
+  )
+
+# Save the plot
+ggsave(
+  filename = "Cluster_by_primary_mode.png",  # File name and extension
+  width = 8,                             # Width in inches
+  height = 6,                            # Height in inches
+  dpi = 300                              # Resolution (good for publication)
+)
+```
+
+As a table
+
+```{r}
+mode_cluster_tab <- table(clean_df$Primary_mode, clean_df$cluster)
+mode_cluster_tab
+```
+
+It appears the following clusters could be described as follows
+
+-   Cluster 1: severe outbreaks primarily caused by water borne illness
+
+-   Cluster 2: mild outbreaks caused by many modes
+
+-   Cluster 3: anomaly outbreaks caused by a water borne illness
+
+#### c. By Most Prevalent Etiologies
+
+```{r}
+# 1. Identify top 50 etiologies causing illnesses
+top_etiologies <- clean_df %>%
+  group_by(Etiology) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(total_illnesses)) %>%
+  slice_head(n = 50) %>%
+  pull(Etiology)   # <- this is the key fix
+
+# 2. Filter dataset to those etiologies
+df_top <- clean_df %>%
+  filter(Etiology %in% top_etiologies)
+
+# 3. Reorder Etiology factor by frequency
+df_top <- df_top %>%
+  mutate(Etiology = forcats::fct_infreq(Etiology))
+
+# 4. Plot
+ggplot(df_top, aes(x = Etiology, fill = cluster)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Cluster Composition by Top 50 Etiologies",
+    y = "Proportion",
+    x = "Etiology"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8)
+  )
+
+# Save the plot
+ggsave(
+  filename = "Cluster_by_etiology.png",  # File name and extension
+  width = 8,                             # Width in inches
+  height = 6,                            # Height in inches
+  dpi = 300                              # Resolution (good for publication)
+)
+```
+
+It appears the following clusters could be further described as follows
+
+-   Cluster 1: severe outbreaks primarily caused by water borne Listeria and Legionella
+
+-   Cluster 2: mild outbreaks caused by many modes with no specific etiology
+
+-   Cluster 3: anomaly outbreaks caused by caused by a water borne Cryptosporidium
+
+#### d. By Most Prevalent Settings
+
+```{r}
+# 1. Identify top 50 settings causing illnesses
+top_settings <- clean_df %>%
+  group_by(Setting) %>%
+  summarise(total_illnesses = sum(Illnesses, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(total_illnesses)) %>%
+  slice_head(n = 50) %>%
+  pull(Setting)   # <- this is the key fix
+
+# 2. Filter dataset to those settings
+df_top <- clean_df %>%
+  filter(Setting %in% top_settings)
+
+# 3. Reorder Setting factor by frequency
+df_top <- df_top %>%
+  mutate(Setting = forcats::fct_infreq(Setting))
+
+# 4. Plot
+ggplot(df_top, aes(x = Setting, fill = cluster)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Cluster Composition by Top 50 Settings",
+    y = "Proportion",
+    x = "Setting"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8)
+  )
+
+# Save the plot
+ggsave(
+  filename = "Cluster_by_setting.png",  # File name and extension
+  width = 8,                             # Width in inches
+  height = 6,                            # Height in inches
+  dpi = 300                              # Resolution (good for publication)
+)
+```
+
+It appears the following clusters could be further described as follows
+
+-   Cluster 1: severe outbreaks primarily caused by water borne Listeria and Legionella, spread primarily in Factories/Industrial Facilities or Hospitals
+
+-   Cluster 2: mild outbreaks contracted in a variety of modes, with no specific etiology or setting
+
+-   Cluster 3: anomaly outbreaks caused by caused by a water borne Cryptosporidium, spread in a community/municipality
+
+#### e. By Season
+
+```{r}
+# Plot
+ggplot(df_top, aes(x = Season, fill = cluster)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Cluster Composition by Season",
+    y = "Proportion",
+    x = "Season"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8)
+  )
+
+# As a table
+mode_cluster_tab <- table(clean_df$Season, clean_df$cluster)
+mode_cluster_tab
+```
+
+It appears the following clusters could be further described as follows
+
+-   Cluster 1: severe outbreaks primarily caused by water borne Listeria and Legionella, spread primarily in Factories/Industrial Facilities or Hospitals
+
+-   Cluster 2: mild outbreaks contracted in a variety of modes, with no specific etiology or setting
+
+-   Cluster 3: an anomaly outbreak caused by a water borne Cryptosporidium, spread in a community/municipality in the spring
+
+#### f. By Year
+
+```{r}
+# Plot
+ggplot(df_top, aes(x = Year, fill = cluster)) +
+  geom_bar(position = "fill") +
+  coord_flip() +
+  labs(
+    title = "Cluster Composition by Year",
+    y = "Proportion",
+    x = "Season"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    axis.text.y = element_text(size = 8)
+  )
+
+# As a table
+mode_cluster_tab <- table(clean_df$Year, clean_df$cluster)
+mode_cluster_tab
+```
+
+It appears the following clusters could be further described as follows
+
+-   Cluster 1: more severe outbreaks primarily caused by water borne illnesses like Listeria and Legionella, spread primarily in Factories/Industrial Facilities or Hospitals, occurring year-round but more prevalent prior to year 2000.
+
+-   Cluster 2: mild outbreaks contracted in a variety of modes and settings, with no specific etiology or season.
+
+-   Cluster 3: an anomaly outbreak caused by a water borne Cryptosporidium, spread in a community/municipality in the spring of 1993.
+
+This validates our observation of the outlier value we observed in the EDA as being represented solely by cluster 3. This value was such an anomaly that it clustered as an individual point by itself.
