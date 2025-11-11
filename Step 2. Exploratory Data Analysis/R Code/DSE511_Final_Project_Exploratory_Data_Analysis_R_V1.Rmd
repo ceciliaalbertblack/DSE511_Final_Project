@@ -415,3 +415,188 @@ ggsave(
 This metric balances outbreak count and lethality. A group with few but deadly outbreaks (e.g., *Listeria*) can stand out compared to frequent but mild ones (e.g., *Norovirus*).
 
 ## Correlation Heatmap
+
+```{r}
+# 1. Call out variables
+corr_cols <- c("Illnesses", "Hospitalizations", "Deaths", "Hosp_per_ill", "Death_per_ill")
+
+# 2. Compute correlation matrix
+corr_matrix <- clean_df %>%
+  select(all_of(corr_cols)) %>%
+  cor(use = "pairwise.complete.obs") %>%
+  as.data.frame()
+
+# 3. Convert to long format for ggplot
+corr_long <- corr_matrix %>%
+  mutate(var1 = rownames(corr_matrix)) %>%
+  pivot_longer(-var1, names_to = "var2", values_to = "correlation")
+
+# 4. Plot
+ggplot(corr_long, aes(x = var1, y = var2, fill = correlation)) +
+  geom_tile() +
+  geom_text(aes(label = round(correlation, 2)), color = "black", size = 3) +
+  scale_fill_gradient2(low = "steelblue", mid = "white", high = "darkred", midpoint = 0) +
+  coord_equal() +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Correlation Heatmap of Key Variables",
+    x = NULL,
+    y = NULL
+  )
+
+# 5. Save to repo
+ggsave(
+  filename = "Correlation_heatmap_num_vars.png",
+  width = 8, height = 8, units = "in", dpi = 300
+)
+```
+
+Strong correlations can indicate redundant variables; none are identified are highly correlated.
+
+## Spatial Trends
+
+Median illness counts by state (across all years)
+
+```{r}
+# 1. Compute median illnesses per state
+geo <- clean_df %>%
+  group_by(State_abbr) %>%
+  summarise(median_illnesses = median(Illnesses, na.rm = TRUE)) %>%
+  arrange(desc(median_illnesses)) %>%
+  slice_head(n = 15)
+
+# 2. Plot top 15 states by median illnesses
+ggplot(
+  geo,
+  aes(
+    x = reorder(State_abbr, -median_illnesses),
+    y = median_illnesses,
+    fill = State_abbr
+  )
+) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 15 States by Median Number of Illnesses",
+    x = "State",
+    y = "Median Illnesses"
+  )
+
+# 3. Save the plot
+ggsave(
+  filename = "Top_15_States_by_Median_Illnesses.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+Median yearly illnesses by state
+
+```{r}
+# 1. Compute total illnesses per state-year, then median yearly illness rate per state
+yearly_geo <- clean_df %>%
+  group_by(State_abbr, Year) %>%
+  summarise(yearly_illnesses = sum(Illnesses, na.rm = TRUE), .groups = "drop") %>%
+  group_by(State_abbr) %>%
+  summarise(median_yearly_illnesses = median(yearly_illnesses, na.rm = TRUE)) %>%
+  arrange(desc(median_yearly_illnesses)) %>%
+  slice_head(n = 15)
+
+# 2. Plot top 15 states by median yearly illness rate
+ggplot(
+  yearly_geo,
+  aes(
+    x = reorder(State_abbr, -median_yearly_illnesses),
+    y = median_yearly_illnesses,
+    fill = State_abbr
+  )
+) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 15 States by Median Yearly Illness Rate",
+    x = "State",
+    y = "Median Yearly Illnesses"
+  )
+
+# 3. Save the plot
+ggsave(
+  filename = "Top_15_States_by_Median_Yearly_Illnesses.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+Median yearly hospitalizations by state
+
+```{r}
+# 1. Compute total hospitalizations per state-year, then median yearly hospitalizations per state
+yearly_hosp <- clean_df %>%
+  group_by(State_abbr, Year) %>%
+  summarise(yearly_hospitalizations = sum(Hospitalizations, na.rm = TRUE), .groups = "drop") %>%
+  group_by(State_abbr) %>%
+  summarise(median_yearly_hospitalizations = median(yearly_hospitalizations, na.rm = TRUE)) %>%
+  arrange(desc(median_yearly_hospitalizations)) %>%
+  slice_head(n = 15)
+
+# 2. Plot top 15 states by median yearly hospitalizations
+ggplot(
+  yearly_hosp,
+  aes(
+    x = reorder(State_abbr, -median_yearly_hospitalizations),
+    y = median_yearly_hospitalizations,
+    fill = State_abbr
+  )
+) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 15 States by Median Yearly Hospitalizations",
+    x = "State",
+    y = "Median Yearly Hospitalizations"
+  )
+
+# 3. Save the plot
+ggsave(
+  filename = "Top_15_States_by_Median_Yearly_Hospitalizations.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+Median yearly deaths rate by state
+
+```{r}
+# 1. Compute total deaths per state-year, then median yearly deaths per state
+yearly_deaths <- clean_df %>%
+  group_by(State_abbr, Year) %>%
+  summarise(yearly_deaths = sum(Deaths, na.rm = TRUE), .groups = "drop") %>%
+  group_by(State_abbr) %>%
+  summarise(median_yearly_deaths = median(yearly_deaths, na.rm = TRUE)) %>%
+  arrange(desc(median_yearly_deaths)) %>%
+  slice_head(n = 15)
+
+# 2. Plot top 15 states by median yearly deaths
+ggplot(
+  yearly_deaths,
+  aes(
+    x = reorder(State_abbr, -median_yearly_deaths),
+    y = median_yearly_deaths,
+    fill = State_abbr
+  )
+) +
+  geom_col(show.legend = FALSE) +
+  theme_minimal(base_size = 13) +
+  labs(
+    title = "Top 15 States by Median Yearly Deaths",
+    x = "State",
+    y = "Median Yearly Deaths"
+  )
+
+# 3. Save the plot
+ggsave(
+  filename = "Top_15_States_by_Median_Yearly_Deaths.png",
+  width = 10, height = 5, units = "in", dpi = 300
+)
+```
+
+It appears that outbreak severity is most pronounced in areas outside of the major 51 US states. Maybe we'll consider omitting these areas, since we have limited information on them. However, this will introduce a bias in our dataset since we will not be considering US territories, native american reservations, and army bases.
+
+## Temporal Trends
