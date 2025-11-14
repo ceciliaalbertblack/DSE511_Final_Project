@@ -19,6 +19,7 @@ library(tidyverse)
 library(fitdistrplus)
 library(factoextra)
 library(dbscan)
+library(mclust)
 ```
 
 Import dataset from Step 1. Data Cleaning
@@ -47,8 +48,33 @@ num_vars <- clean_df %>%
 ### I. Explore Correlations Among Variables
 
 ```{r}
-cor(num_vars)
-pairs(num_vars)
+library(ggplot2)
+library(tidyr)
+
+dr_long <- scaled_blm_predict %>%
+  pivot_longer(cols = everything(), names_to = "variable", values_to = "value")
+
+# Spearman correlation matrix on standardized variables
+cor_matrix_f_tribs <- cor(scaled_blm_predict, method = "spearman")
+
+# Load library
+library(corrplot)
+
+# Half heatmap (lower triangle)
+corrplot(cor_matrix_f_tribs,
+         method = "color",
+         type = "lower",         # show only the lower triangle
+         tl.cex = 0.7,
+         tl.col = "black",
+         addCoef.col = "black",
+         number.cex = 0.6)
+
+# Save correlation plot
+ggsave(
+  filename = "Correlation_num_vars.png",  # file name
+  width = 8, height = 5, units = "in",    # size in inches
+  dpi = 300                               # resolution for publication-quality image
+)
 ```
 
 ### II. Dimensionality Reduction using Principal Component Analysis
@@ -105,6 +131,32 @@ Encountered a limitation in R:
 -   Even if it could, the distance matrix would be enormous (≈ 66k × 66k).
 
 Thus, hierarchical clustering on a full distance matrix just doesn’t scale to this dataset.
+
+Because of this, I will use a different clustering method in part c.
+
+#### c. DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
+
+```{r}
+db <- dbscan(pca_scores, eps = 0.6, minPts = 10)
+fviz_cluster(db, data = pca_scores, geom = "point")
+```
+
+#### IV. Gaussian Mixture Model (GMM)
+
+```{r}
+mclust_result <- Mclust(pca_scores)
+summary(mclust_result)
+fviz_mclust(mclust_result, "classification")
+```
+
+ChatGPT's comparison of clustering methods
+
+| Method | Type | Strength | Limitation | Scales to 66k? |
+|----|----|----|----|----|
+| **K-means** | Partitioning | Fast, interpretable | Sensitive to outliers, assumes spherical clusters | ✅ |
+| **Hierarchical** | Agglomerative | Visual dendrogram | Memory limit (\>65k rows) | ⚠️ (sample only) |
+| **DBSCAN** | Density-based | Finds anomalies | Needs parameter tuning | ✅ (with PCA) |
+| **Mclust (GMM)** | Model-based | Automatic k via BIC | Sensitive to outliers | ✅ |
 
 ### IV. Cluster Characterization
 
