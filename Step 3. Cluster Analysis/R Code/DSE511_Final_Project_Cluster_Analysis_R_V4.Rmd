@@ -1,0 +1,274 @@
+---
+title: "DSE 511 Final Project Cluster Analysis in R"
+author: "Cecilia Albert-Black"
+date: "2025-11-11"
+output: html_document
+---
+
+Set working directory to R code folder
+
+```{r}
+setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 3. Cluster Analysis/R Code")
+```
+
+Load necessary libraries (must be installed first)
+
+```{r}
+library(readr)
+library(tidyverse)
+library(fitdistrplus)
+library(factoextra) #for pca
+library(klaR) # K-modes clustering
+library(psych) # for KMO test
+```
+
+Import dataset from Step 1. Data Cleaning
+
+```{r}
+clean_df <- read_csv("C:/Users/q4q/repos/DSE511_Final_Project/Step 1. Data Cleaning/R code/outbreak_clean_r_v3.csv")
+
+head(clean_df)
+```
+
+## Cluster Analysis
+
+### I. Hierarchical
+
+**Assumptions**
+
+-   Data must be numeric or convertible to a distance metric
+
+-   Variables must be on comparable scales (standardized variables)
+
+-   Data should have some natural separation, the structure cannot be completely random
+
+-   Variables can be non-parametric
+
+**Limitations encountered:** hclust() function in base R could not handle more than 65,536 observations (the dataset has 66,713).
+
+### II. K-Means
+
+**Assumptions**: continuous variables with Euclidean distances.
+
+**Limitations**: our data fail these assumptions because they are discrete, right-skewed, and Poisson/logarithmically distributed. Thus, we cannot perform a k-means cluster analysis.
+
+**Notes**: I explored this option regardless of failing the assumptions in the DSE511_Final_Project_Cluster_Analysis_V3.
+
+### III. K-Modes
+
+**Assumptions**
+
+-   Variables must be categorical
+
+-   Variables must not have any missing data
+
+-   Categories must have a mode (most frequent category) as their center
+
+-   Categories must have a similar size/density
+
+**Limitations**: None!
+
+**Notes**: some categorical variables only apply to some of the observations; thus, we will replace NAs with "Not Applicable".
+
+Select categorical variables that applt to all outbreaks by creating a vector of character names
+
+```{r}
+cat_vars <- c(
+  "Date",
+  "Season",
+  "Region",
+  "Primary_mode",
+  "Setting_group",
+  "Etiology_group"
+)
+```
+
+Create a categorical dataset and convert to factors
+
+```{r}
+kmodes_df <- clean_df %>%
+  dplyr::select(all_of(cat_vars)) %>%
+  mutate(
+    across(everything(), as.factor)
+  )
+
+# sanity check
+dim(kmodes_df)
+names(kmodes_df)
+```
+
+Ensure there are no missing values in these categories (there should be no TRUE counts)
+
+```{r}
+summary(is.na(kmodes_df))
+```
+
+Convert to dataframe
+
+```{r}
+kmodes_input <- as.data.frame(kmodes_df)
+```
+
+#### i. Determining number of clusters (Elbow method)
+
+Run k-modes on different sizes (e.g. from 1-10)
+
+```{r}
+set.seed(123)
+
+kmodes_results <- vector("list", length = 10)
+
+for (k in 1:10) {
+  cat("Fitting k =", k, "\n")
+  
+  kmodes_results[[k]] <- klaR::kmodes(
+    kmodes_input,
+    modes   = k,
+    iter.max = 50
+  )
+}
+
+names(kmodes_results) <- paste0("k_", 1:10)
+```
+
+For each size, plot the cost function (i.e. within-cluster dissimilarities) against the number of clusters (k) to identify the elbow point
+
+```{r}
+# Extract within-cluster dissimilarities (cost) by cluster size
+kmodes_costs <- sapply(
+  kmodes_results,
+  function(x) sum(as.numeric(x$withindiff))
+)
+
+plot(
+  1:10, kmodes_costs, type = "b",
+  xlab = "Number of clusters (k)",
+  ylab = "Within-cluster dissimilarity (cost)",
+  main = "k-modes cost vs number of clusters"
+)
+```
+
+Identify the elbow point in the plot, where the rate of decrease in the cost function significanlty slows down; this point suggests the optimal number of clusters.
+
+It seems like 2 clusters could be sufficient but 2-6 clusters have a similar cost.
+
+Since it's hard to determine what cluster size to use, let's narrow our results by omitting clusters with very small sizes
+
+#### ii. Assessing cluster sizes
+
+```{r}
+# Extract cluster size tables
+cluster_sizes <- lapply(kmodes_results, function(x) table(x$cluster))
+
+# Plot each one separately
+par(mfrow = c(2, 2))  # adjust if you want a grid of plots
+
+for (k in 1:10) {
+  barplot(
+    cluster_sizes[[k]],
+    main = paste("Cluster Sizes for k =", k),
+    xlab = "Cluster",
+    ylab = "Count",
+    col = "skyblue"
+  )
+}
+```
+
+We'll land on 4 clusters since it seems to have roughly equal cluster sizes while not over clustering.
+
+#### iii. Results of 2 Clusters
+
+```{r}
+# 2 clusters 
+kmodes_result_2 <- klaR::kmodes( 
+  kmodes_input, 
+  modes = 2, 
+  iter.max = 50 
+  )
+```
+
+Once you determined the optimal number of clusters, determine:
+
+Size of each cluster
+
+```{r}
+table(kmodes_result_2$cluster)
+```
+
+Most common categorizes per cluster
+
+```{r}
+kmodes_result_2$modes
+```
+
+Add clusters back to dataset
+
+```{r}
+# Add cluster labels to the kmodes_input data
+kmodes_clusters_2 <- factor(kmodes_result_2$cluster)
+
+kmodes_df_2 <- kmodes_input %>%
+  mutate(cluster = kmodes_clusters_2)
+
+# Quick look at cluster sizes
+kmodes_df_2 %>%
+  count(cluster)
+```
+
+Visualize
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+# Helper function
+plot_cluster_comp <- function(data, var_name) {
+  ggplot(
+    data,
+    aes(x = .data[[var_name]], fill = cluster)
+  ) +
+    geom_bar(position = "fill") +           # proportion within each category
+    coord_flip() +
+    theme_minimal(base_size = 12) +
+    labs(
+      title = paste("Cluster Composition by", var_name),
+      x = var_name,
+      y = "Proportion"
+    ) +
+    theme(
+      legend.position = "bottom",
+      axis.text.y = element_text(size = 8)
+    )
+}
+
+# By region
+p_region <- plot_cluster_comp(kmodes_df_2, "Region")
+
+# By season
+p_season <- plot_cluster_comp(kmodes_df_2, "Season")
+
+# By primary mode
+p_primary <- plot_cluster_comp(kmodes_df_2, "Primary_mode")
+
+# By etiology (or etiologic group, if you have that)
+p_etiology <- plot_cluster_comp(kmodes_df_2, "Etiology_group")
+```
+
+Save plots
+
+```{r}
+# Create plots -----------------------------------------------------------
+
+p_region <- plot_cluster_comp(kmodes_df_2, "Region")
+p_season <- plot_cluster_comp(kmodes_df_2, "Season")
+p_primary <- plot_cluster_comp(kmodes_df_2, "Primary_mode")
+p_etiology <- plot_cluster_comp(kmodes_df_2, "Etiology_group")
+
+# Save plots -------------------------------------------------------------
+
+ggsave("cluster_region.png", p_region, width = 7, height = 5, dpi = 300)
+ggsave("cluster_season.png", p_season, width = 7, height = 5, dpi = 300)
+ggsave("cluster_primary_mode.png", p_primary, width = 7, height = 5, dpi = 300)
+ggsave("cluster_etiology_group.png", p_etiology, width = 7, height = 5, dpi = 300)
+
+```

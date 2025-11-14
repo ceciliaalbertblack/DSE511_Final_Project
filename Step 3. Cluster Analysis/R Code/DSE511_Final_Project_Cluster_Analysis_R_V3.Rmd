@@ -11,15 +11,17 @@ Set working directory to R code folder
 setwd("C:/Users/q4q/repos/DSE511_Final_Project/Step 3. Cluster Analysis/R Code")
 ```
 
-Load necessary libraries
+Load necessary libraries (must be installed first)
 
 ```{r}
 library(readr)
 library(tidyverse)
 library(fitdistrplus)
-library(factoextra)
-library(dbscan)
+library(factoextra) #for pca
+library(dbscan) # for pca
 library(mclust)
+library(klaR) # K-modes clustering
+library(psych) # for KMO test
 ```
 
 Import dataset from Step 1. Data Cleaning
@@ -32,52 +34,33 @@ head(clean_df)
 
 ## Cluster Analysis
 
+### I. Hierarchical
+
+Encountered a limitation in R:
+
+-   I tried running hierarchical clustering on all \~66,000 outbreaks
+
+-   But hclust() in base R cannot handle more than 65,536 observations,
+
+-   Even if it could, the distance matrix would be enormous (≈ 66k × 66k).
+
+Thus, hierarchical clustering on a full distance matrix just doesn’t scale to this dataset.
+
+### II. K-Means
+
 Select variables to cluster
 
 ```{r}
 num_vars <- clean_df %>%
   dplyr::select(
-    Illnesses_std,
-    Hospitalizations_std,
-    Deaths_std,
+    Illnesses,
+    Hospitalizations,
+    Deaths,
     Hosp_per_ill,
-    Death_per_ill
-  )
+    Death_per_ill)
 ```
 
-### I. Explore Correlations Among Variables
-
-```{r}
-library(ggplot2)
-library(tidyr)
-
-dr_long <- scaled_blm_predict %>%
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "value")
-
-# Spearman correlation matrix on standardized variables
-cor_matrix_f_tribs <- cor(scaled_blm_predict, method = "spearman")
-
-# Load library
-library(corrplot)
-
-# Half heatmap (lower triangle)
-corrplot(cor_matrix_f_tribs,
-         method = "color",
-         type = "lower",         # show only the lower triangle
-         tl.cex = 0.7,
-         tl.col = "black",
-         addCoef.col = "black",
-         number.cex = 0.6)
-
-# Save correlation plot
-ggsave(
-  filename = "Correlation_num_vars.png",  # file name
-  width = 8, height = 5, units = "in",    # size in inches
-  dpi = 300                               # resolution for publication-quality image
-)
-```
-
-### II. Dimensionality Reduction using Principal Component Analysis
+Conduct a principal component analysis (PCA) to determine the number of clusters
 
 ```{r}
 pca_result <- prcomp(num_vars, scale. = TRUE)
@@ -92,9 +75,7 @@ pca_scores <- as.data.frame(pca_result$x[, 1:3])
 head(pca_scores)
 ```
 
-### III. Apply Clustering Methods
-
-#### a. K-Means
+Run K-Means and set the seed to ensure reproducible cluster assignment
 
 ```{r}
 set.seed(123)
@@ -102,7 +83,7 @@ kmeans_result <- kmeans(pca_scores, centers = 3, nstart = 25)
 clean_df$cluster <- factor(kmeans_result$cluster)
 ```
 
-Visualize
+Visualize the clusters on the PCA plot
 
 ```{r}
 pca_clust <- fviz_cluster(kmeans_result, data = pca_scores, geom = "point", ellipse = TRUE)
@@ -120,45 +101,28 @@ ggsave(
 
 It seems like there is one major outlier. My guess is that it's the 400,000 illnesses in March 1993 from a water borne outbreak we identified during the EDA.
 
-#### b. Hierarchical
-
-Encountered a limitation in R:
-
--   I tried running hierarchical clustering on all \~66,000 outbreaks
-
--   But hclust() in base R cannot handle more than 65,536 observations,
-
--   Even if it could, the distance matrix would be enormous (≈ 66k × 66k).
-
-Thus, hierarchical clustering on a full distance matrix just doesn’t scale to this dataset.
-
-Because of this, I will use a different clustering method in part c.
-
-#### c. DBSCAN (Density-Based Spatial Clustering of Applications with Noise)
+### III. K-Modes
 
 ```{r}
-db <- dbscan(pca_scores, eps = 0.6, minPts = 10)
-fviz_cluster(db, data = pca_scores, geom = "point")
+
 ```
 
-#### IV. Gaussian Mixture Model (GMM)
+### IV. K-Prototypes
 
 ```{r}
-mclust_result <- Mclust(pca_scores)
-summary(mclust_result)
-fviz_mclust(mclust_result, "classification")
+
 ```
 
 ChatGPT's comparison of clustering methods
 
 | Method | Type | Strength | Limitation | Scales to 66k? |
-|----|----|----|----|----|
+|---------------|---------------|---------------|---------------|---------------|
 | **K-means** | Partitioning | Fast, interpretable | Sensitive to outliers, assumes spherical clusters | ✅ |
 | **Hierarchical** | Agglomerative | Visual dendrogram | Memory limit (\>65k rows) | ⚠️ (sample only) |
 | **DBSCAN** | Density-based | Finds anomalies | Needs parameter tuning | ✅ (with PCA) |
 | **Mclust (GMM)** | Model-based | Automatic k via BIC | Sensitive to outliers | ✅ |
 
-### IV. Cluster Characterization
+## Cluster Characterization
 
 #### a. By Numeric Variables
 
