@@ -270,7 +270,6 @@ p_year <- plot_cluster_comp(clean_df_2, "Year")
 
 # By Month
 p_month <- plot_cluster_comp(clean_df_2, "Month")
-
 ```
 
 Save plots
@@ -285,6 +284,29 @@ View
 ```{r}
 p_year
 p_month
+```
+
+Illness counts by cluster
+
+```{r}
+p_ill <- ggplot(
+    data = clean_df_2,
+    aes(x = cluster, y = log_Illnesses, fill = cluster)
+) +
+    geom_boxplot() +
+    theme_minimal(base_size = 12) +
+    labs(
+        title = "Log Illnesses by Cluster",
+        x = "Cluster",
+        y = "Log Illnesses"
+    ) +
+    theme(
+        legend.position = "bottom",
+        axis.text.y = element_text(size = 8)
+    )
+
+p_ill
+
 ```
 
 Description of clusters
